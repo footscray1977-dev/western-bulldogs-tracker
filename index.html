@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Western Bulldogs 2027 List Tracker</title>
+<meta name="description" content="Interactive tracker for the Western Bulldogs 2027 playing list: trade-period ins, delistings, retirements and squad.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Western Bulldogs <span class="dot">2027</span> List Tracker</h1>
+  <p id="metaLine">Loading list data…</p>
+  <p class="updated" id="updatedLine"></p>
+</header>
+
+<section class="stats" aria-label="List summary">
+  <div class="stat in"><div class="n" id="statIn">–</div><div class="l">Arrivals (trade + free agency)</div></div>
+  <div class="stat out"><div class="n" id="statOut">–</div><div class="l">Departures</div></div>
+  <div class="stat"><div class="n" id="statDel">–</div><div class="l">Delisted</div></div>
+  <div class="stat"><div class="n" id="statRet">–</div><div class="l">Retired</div></div>
+  <div class="stat"><div class="n" id="statSquad">–</div><div class="l">Projected 2027 senior list</div></div>
+</section>
+
+<nav class="tabs" aria-label="Views">
+  <button class="tab" data-tab="squad" aria-selected="true">Squad</button>
+  <button class="tab" data-tab="ins" aria-selected="false">Trade &amp; Free-Agency Ins</button>
+  <button class="tab" data-tab="outs" aria-selected="false">Outs: Delisted &amp; Retired</button>
+  <button class="tab" data-tab="guide" aria-selected="false">How to update</button>
+</nav>
+
+<div class="toolbar">
+  <input id="search" type="search" placeholder="Search players…" aria-label="Search players">
+  <select id="posFilter" aria-label="Filter by position"></select>
+  <button id="exportBtn" type="button">Export CSV</button>
+</div>
+
+<main>
+  <div id="content"><p class="muted">Loading…</p></div>
+</main>
+
+<footer>
+  <p id="sources"></p>
+  <p>Tip: this page works offline from a single folder. To publish it, push the folder to GitHub and import it in Vercel — see README.md.</p>
+</footer>
+
+<script src="data/players.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

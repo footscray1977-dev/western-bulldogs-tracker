@@ -1,0 +1,139 @@
+:root {
+  --navy: #0b1e3f;
+  --navy-2: #132c57;
+  --red: #d22630;
+  --red-dark: #a8151f;
+  --paper: #ffffff;
+  --wash: #f2f4f8;
+  --line: #dfe4ee;
+  --ink: #16213a;
+  --muted: #5a6578;
+  --green: #1c7a3d;
+  --amber: #9a6200;
+  --radius: 10px;
+  --font: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--wash);
+  line-height: 1.45;
+}
+
+.topbar {
+  background: var(--navy);
+  color: #fff;
+  padding: 26px 28px 20px;
+  border-bottom: 5px solid var(--red);
+}
+.topbar h1 { margin: 0 0 4px; font-size: 30px; letter-spacing: 0.2px; }
+.topbar h1 .dot { color: var(--red); }
+.topbar p { margin: 2px 0; color: #c6d0e4; font-size: 14px; }
+.topbar .updated { color: #8fa0c2; font-size: 12.5px; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 16px 28px 0;
+  max-width: 1100px;
+}
+.stat {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.stat .n { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 12.5px; color: var(--muted); }
+.stat.in .n { color: var(--green); }
+.stat.out .n { color: var(--red); }
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px 28px 0;
+  max-width: 1100px;
+  flex-wrap: wrap;
+}
+.tab {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.tab[aria-selected="true"] {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  padding: 14px 28px 0;
+  max-width: 1100px;
+  flex-wrap: wrap;
+}
+.toolbar input, .toolbar select {
+  font-size: 14px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+}
+.toolbar input { flex: 1 1 220px; }
+.toolbar button {
+  font-size: 14px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--navy);
+  background: #fff;
+  color: var(--navy);
+  cursor: pointer;
+}
+.toolbar button:hover { background: var(--navy); color: #fff; }
+
+main { max-width: 1100px; padding: 14px 28px 40px; }
+table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { background: var(--navy-2); color: #fff; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+th .arrow { color: #9fb0d0; }
+tbody tr:hover { background: #f6f8fc; }
+tbody tr.in-row td:first-child { border-left: 4px solid var(--green); }
+tbody tr.out-row td:first-child { border-left: 4px solid var(--red); }
+tbody tr.ret-row td:first-child { border-left: 4px solid var(--navy-2); }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 10px; }
+.pill.in { background: #e2f2e7; color: var(--green); }
+.pill.out { background: #fbe4e5; color: var(--red-dark); }
+.pill.ret { background: #e6ebf5; color: var(--navy); }
+.muted { color: var(--muted); font-size: 13px; }
+.count { padding: 10px 2px; color: var(--muted); font-size: 13px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.card h3 { margin: 0 0 4px; font-size: 16px; }
+.card .via { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+
+footer { max-width: 1100px; padding: 0 28px 40px; color: var(--muted); font-size: 13px; }
+footer a { color: var(--navy); }
+.guide { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+.guide code { background: var(--wash); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-size: 13px; }
+.guide pre { background: var(--navy); color: #e8edf7; border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: 13px; }
+
+@media (max-width: 640px) {
+  .topbar, .toolbar, .tabs, main, footer { padding-left: 14px; padding-right: 14px; }
+  .topbar h1 { font-size: 23px; }
+  table { font-size: 13px; }
+  th:nth-child(4), td:nth-child(4) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
