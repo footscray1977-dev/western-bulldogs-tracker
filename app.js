@@ -53,9 +53,11 @@
     if (state.tab === "ins" || state.tab === "outs") {
       host.innerHTML = '<div class="cards">' + rows.map(function (r) {
         var cls = r._s === "in" ? "in-row" : "out-row";
+        var rec = (r.games !== undefined && r.games !== null) ? r.games + " games, " + r.goals + " goals" : "";
         return '<div class="card ' + cls + '"><h3>' + esc(r.name) + "</h3>" +
-          '<div class="via">' + esc(r.via || r.move || "") + "</div>" +
-          '<div class="muted">' + esc(r.note || r.detail || "") + "</div></div>";
+          '<div class="via">' + esc(r.via || r.move || "") + (rec ? " · " + rec : "") + "</div>" +
+          '<div class="muted">' + esc(r.note || r.detail || "") + "</div>" +
+          (r.honours ? '<div class="muted">Honours: ' + esc(r.honours) + "</div>" : "") + "</div>";
       }).join("") + "</div>" +
         '<div class="count">' + rows.length + " players</div>";
       return;
@@ -66,18 +68,30 @@
       '<th data-k="name">Player' + arrow("name") + "</th>" +
       '<th data-k="_s">Status' + arrow("_s") + "</th>" +
       '<th data-k="pos">Pos' + arrow("pos") + "</th>" +
-      '<th data-k="age">Age' + arrow("age") + "</th>" +
-      '<th data-k="via">Arrived / Note' + arrow("via") + "</th>" +
+      '<th data-k="grade">Grade' + arrow("grade") + "</th>" +
+      '<th data-k="games">Games' + arrow("games") + "</th>" +
+      '<th data-k="goals">Goals' + arrow("goals") + "</th>" +
+      '<th data-k="g2026">2026 G·Gl' + arrow("g2026") + "</th>" +
+      '<th data-k="ht">Ht' + arrow("ht") + "</th>" +
+      '<th data-k="dob">Born' + arrow("dob") + "</th>" +
       "</tr></thead><tbody>" +
       rows.map(function (r) {
         var cls = r._s === "in" ? "in-row" : "ret-row";
-        return "<tr class='" + cls + "'><td><strong>" + esc(r.name) + "</strong>" +
-          (r.role ? ' <span class="muted">(' + esc(r.role) + ")</span>" : "") + "</td>" +
+        var dash = function (v) { return (v === null || v === undefined || v === "") ? "–" : v; };
+        var tip = esc(r.honours || r.via || r.note || "");
+        return "<tr class='" + cls + "'><td><strong" + (tip ? " title='" + tip + "'" : "") + ">" + esc(r.name) + "</strong>" +
+          (r.role ? ' <span class="muted">(' + esc(r.role) + ")</span>" : "") +
+          (r.num ? ' <span class="muted">#' + esc(r.num) + "</span>" : "") + "</td>" +
           "<td>" + pill(r._s) + "</td>" +
           "<td>" + esc(r.pos || "–") + "</td>" +
-          "<td>" + (r.age === null || r.age === undefined ? "–" : r.age) + "</td>" +
-          "<td class='muted'>" + esc(r.via || r.note || "–") + "</td></tr>";
+          "<td>" + dash(r.grade) + "</td>" +
+          "<td>" + dash(r.games) + "</td>" +
+          "<td>" + dash(r.goals) + "</td>" +
+          "<td>" + dash(r.g2026) + " · " + dash(r.gl2026) + "</td>" +
+          "<td>" + dash(r.ht) + "</td>" +
+          "<td class='muted'>" + dash(r.dob) + "</td></tr>";
       }).join("") + "</tbody></table>" +
+      '<div class="count muted">Hover a name for honours / arrival note. Grades via Draftguru 2026 list.</div>' +
       '<div class="count">' + rows.length + " of " + rowsForTab().length + " on the 2027 list view</div>";
     host.innerHTML = html;
 
@@ -97,10 +111,12 @@
 
   function exportCSV() {
     var rows = rowsForTab();
-    var head = ["name", "status", "pos", "age", "via_or_move", "note"];
+    var head = ["name", "status", "pos", "num", "grade", "dob", "ht", "games", "goals", "g2026", "gl2026", "via_or_move", "note"];
     var lines = [head.join(",")].concat(rows.map(function (r) {
-      return [r.name, r._s, r.pos || "", (r.age === null || r.age === undefined) ? "" : r.age,
-        r.via || r.move || "", (r.note || r.detail || "").replace(/,/g, ";")].map(function (c) {
+      var dash = function (v) { return (v === null || v === undefined) ? "" : v; };
+      return [r.name, r._s, r.pos || "", dash(r.num), dash(r.grade), dash(r.dob), dash(r.ht),
+        dash(r.games), dash(r.goals), dash(r.g2026), dash(r.gl2026),
+        r.via || r.move || "", ((r.note || r.detail || "") + (r.honours ? " | " + r.honours : "")).replace(/,/g, ";")].map(function (c) {
         return '"' + String(c).replace(/"/g, '""') + '"';
       }).join(",");
     }));
@@ -154,7 +170,7 @@
       "<li>Open <code>data/players.js</code> in any text editor.</li>" +
       "<li>Add draftees to <code>retained</code>, e.g. <code>{ name: \"New Draftee\", pos: \"Mid\" }</code>.</li>" +
       "<li>Move departures into <code>outs</code> with a <code>move</code> label.</li>" +
-      "<li>Fill in <code>age</code> / numbers / 2026 averages as they are confirmed, then refresh this page.</li>" +
+      "<li>Fill in new draftees' <code>num</code>, <code>dob</code>, <code>ht</code> and <code>drafted</code> details as confirmed, then refresh this page.</li>" +
       "<li>Commit and push — if connected to GitHub + Vercel, the live site updates itself:</li>" +
       "</ol>" +
       "<pre>git add -A && git commit -m \"Update list\" && git push</pre>" +

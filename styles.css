@@ -132,7 +132,9 @@ footer a { color: var(--navy); }
   .topbar, .toolbar, .tabs, main, footer { padding-left: 14px; padding-right: 14px; }
   .topbar h1 { font-size: 23px; }
   table { font-size: 13px; }
-  th:nth-child(4), td:nth-child(4) { display: none; }
+  th:nth-child(4), td:nth-child(4),
+  th:nth-child(8), td:nth-child(8),
+  th:nth-child(9), td:nth-child(9) { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
