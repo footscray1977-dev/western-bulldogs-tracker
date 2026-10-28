@@ -283,16 +283,56 @@
     wireCards(host);
   }
 
+  var ORDER = { "Sep 2026": 1, "Oct 2026": 2, "9 Oct 2026": 3, "Nov 2026": 4 };
+
   function renderMoves(host, rows) {
+    if (!state.mkind) state.mkind = "All";
+    if (!state.msort) { state.msort = "date"; state.mdir = 1; }
     lastRows = rows;
-    var ins = rows.filter(function (r) { return r._s === "in"; });
-    var outs = rows.filter(function (r) { return r._s === "out"; });
-    var group = function (title, list) {
-      return "<h2 class='movetitle'>" + title + " (" + list.length + ")</h2>" +
-        '<div class="cards">' + list.map(function (r) { return cardHTML(r, rows.indexOf(r)); }).join("") + "</div>";
+    var kinds = ["All", "Arrival", "Delisted", "Retired"];
+    var list = rows.filter(function (r) { return state.mkind === "All" || r.kind === state.mkind; });
+    list.sort(function (a, b) {
+      var k = state.msort, d = state.mdir, c = 0;
+      if (k === "date") c = (ORDER[a.date] || 0) - (ORDER[b.date] || 0);
+      else c = String(a.name).localeCompare(String(b.name));
+      if (c === 0) c = String(a.name).localeCompare(String(b.name));
+      return c * d;
+    });
+    var kpill = function (r) {
+      var cls = r.kind === "Arrival" ? "in" : (r.kind === "Retired" ? "ret" : "out");
+      return "<span class='pill " + cls + "'>" + esc(r.kind || "–") + "</span>";
     };
-    host.innerHTML = group("Arrivals — trade & free agency", ins) + group("Departures — delisted & retired", outs);
-    wireCards(host);
+    host.innerHTML =
+      '<div class="gbands" role="group" aria-label="Filter moves by type">' +
+      kinds.map(function (k) {
+        var n = k === "All" ? rows.length : rows.filter(function (r) { return r.kind === k; }).length;
+        return '<button class="gbtn" data-mkind="' + k + '" aria-pressed="' + (state.mkind === k) + '">' + k + "<small>" + n + "</small></button>";
+      }).join("") + "</div>" +
+      '<div class="tscroll"><table><thead><tr>' +
+      "<th data-mk='date'>Date" + (state.msort === "date" ? ' <span class="arrow">' + (state.mdir === 1 ? "▲" : "▼") + "</span>" : "") + "</th>" +
+      "<th data-mk='name'>Player" + (state.msort === "name" ? ' <span class="arrow">' + (state.mdir === 1 ? "▲" : "▼") + "</span>" : "") + "</th>" +
+      "<th>Type</th><th>Via / detail</th>" +
+      "</tr></thead><tbody>" +
+      list.map(function (r) {
+        return "<tr data-i='" + rows.indexOf(r) + "'><td>" + esc(r.date || "–") + "</td>" +
+          "<td><strong>" + esc(r.name) + "</strong></td><td>" + kpill(r) + "</td>" +
+          "<td class='muted'>" + esc(r.via || r.move || "") + (r.detail || r.note ? " — " + esc(r.detail || r.note) : "") + "</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      '<div class="count">' + list.length + " of " + rows.length + " moves. Click a row for the full profile.</div>";
+    Array.prototype.forEach.call(host.querySelectorAll("[data-mkind]"), function (b) {
+      b.addEventListener("click", function () { state.mkind = b.getAttribute("data-mkind"); save(); renderMoves(host); });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("[data-mk]"), function (th) {
+      th.addEventListener("click", function () {
+        var k = th.getAttribute("data-mk");
+        if (state.msort === k) state.mdir *= -1;
+        else { state.msort = k; state.mdir = 1; }
+        save(); renderMoves(host);
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("tbody tr"), function (tr) {
+      tr.addEventListener("click", function () { openModal(lastRows[+tr.getAttribute("data-i")]); });
+    });
   }
 
   function maxBy(rows, k) {
