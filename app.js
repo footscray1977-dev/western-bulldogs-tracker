@@ -342,6 +342,43 @@
       "<div><h3>Positional mix</h3><div class='chips'>" + chips + "</div></div></div>";
   }
 
+  function peers(line) {
+    return DATA.ins.concat(DATA.retained).filter(function (p) { return lineOf(p) === line; });
+  }
+
+  function percentile(r, k) {
+    if (r[k] === null || r[k] === undefined) return null;
+    var group = peers(lineOf(r)).filter(function (p) { return p[k] !== null && p[k] !== undefined; });
+    if (group.length < 3) return null;
+    var below = group.filter(function (p) { return p[k] < r[k]; }).length;
+    return Math.round(below / (group.length - 1) * 100);
+  }
+
+  var PCT_STATS = [["avgD", "Disposals"], ["avgM", "Marks"], ["avgT", "Tackles"], ["avgG", "Goals"], ["avgAF", "Fantasy"]];
+
+  function pctBarsHTML(r) {
+    var bars = PCT_STATS.map(function (s) {
+      var p = percentile(r, s[0]);
+      if (p === null) return "";
+      return '<div class="prow"><span class="pl">' + s[1] + "</span>" +
+        '<span class="ptrack"><i style="width:' + p + '%"></i></span>' +
+        '<span class="pv">P' + p + "</span></div>";
+    }).join("");
+    if (!bars) return "";
+    return "<h3>2026 vs " + esc(LINE_NAMES[lineOf(r)].toLowerCase()) + " (percentile)</h3>" +
+      '<div class="pbars">' + bars + "</div>";
+  }
+
+  function avgStripHTML(r) {
+    var chips = [["avgK", "Kicks"], ["avgHB", "Handballs"], ["avgD", "Disposals"], ["avgM", "Marks"], ["avgG", "Goals"], ["avgT", "Tackles"], ["avgAF", "Fantasy"], ["avgSC", "S'Coach"]];
+    var any = chips.some(function (c) { return r[c[0]] !== null && r[c[0]] !== undefined; });
+    if (!any) return "";
+    return "<h3>2026 averages</h3><div class='avgstrip'>" + chips.map(function (c) {
+      var v = r[c[0]];
+      return "<span class='avgchip'><strong>" + (v === null || v === undefined ? "–" : v.toFixed(1)) + "</strong>" + c[1] + "</span>";
+    }).join("") + "</div>";
+  }
+
   function openModal(r) {
     if (!r) return;
     var dash = function (v) { return (v === null || v === undefined || v === "") ? "–" : v; };
@@ -367,6 +404,13 @@
       '<div class="muted">' + esc(r.via || r.move || "") + (r.role ? " · " + esc(r.role) : "") + "</div>" +
       "<div>" + pill(r._s) + "</div></div></div>" +
       '<div class="mgrid">' + rows + "</div>" +
+      avgStripHTML(r) +
+      "<h3>Record</h3><table class='rectable'><thead><tr><th></th><th>Games</th><th>Goals</th><th>Avg Disp</th></tr></thead><tbody>" +
+      "<tr><td>2026</td><td>" + dash(r.g2026) + "</td><td>" + dash(r.gl2026) + "</td><td>" + (r.avgD ? r.avgD.toFixed(1) : "–") + "</td></tr>" +
+      "<tr><td>Career</td><td>" + dash(r.games) + "</td><td>" + dash(r.goals) + "</td><td>–</td></tr>" +
+      "</tbody></table>" +
+      pctBarsHTML(r) +
+      "<h3>2027 game log</h3><p class='muted mnote'>Round-by-round lines land here after the season opener — no invented numbers, ever.</p>" +
       (r.honours ? "<h3>Honours</h3><div class='mhon'>" + esc(r.honours) + "</div>" : "") +
       ((r.note || r.detail) ? "<p class='muted mnote'>" + esc(r.note || r.detail) + "</p>" : "");
     $("modal").setAttribute("aria-hidden", "false");

@@ -183,6 +183,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, th:focus-visibl
 .mrow span:first-child { color: var(--muted); }
 .mrow span:last-child { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .mhon { background: var(--wash); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 14.5px; line-height: 1.55; }
+.avgstrip { display: flex; flex-wrap: wrap; gap: 8px; }
+.avgchip { background: var(--navy); color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 12px; display: flex; flex-direction: column; align-items: center; min-width: 76px; }
+.avgchip strong { font-size: 16px; font-variant-numeric: tabular-nums; }
+.rectable { width: 100%; border-collapse: collapse; font-size: 14px; }
+.rectable th, .rectable td { border: none; border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; }
+.rectable th { background: none; color: var(--muted); position: static; font-size: 12px; }
+.pbars { display: flex; flex-direction: column; gap: 7px; }
+.prow { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+.prow .pl { width: 82px; flex: none; }
+.ptrack { flex: 1; height: 10px; border-radius: 5px; background: var(--wash); border: 1px solid var(--line); overflow: hidden; }
+.ptrack i { display: block; height: 100%; background: var(--green); }
+.pv { width: 40px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
 .mnote { font-size: 14.5px; line-height: 1.55; }
 
 body.dark { --paper: #101b33; --wash: #0a1327; --line: #26365a; --ink: #e9eef8; --muted: #93a3c2; --navy-2: #1b3260; }
