@@ -598,10 +598,11 @@
     if (!state.advM || !ADV.metrics[state.advM]) state.advM = codes[0];
     var m = ADV.metrics[state.advM];
     var list = Object.keys(m.rows).map(function (n) {
-      return { name: n, rank: m.rows[n].rank, avg: m.rows[n].avg, cut: true };
-    }).sort(function (a, b) { return a.avg - b.avg; }).reverse();
+      return { name: n, rank: m.rows[n].rank || null, avg: ("avg" in m.rows[n]) ? m.rows[n].avg : null,
+               rankTot: m.rows[n].rankTot || null, cut: !!m.rows[n].rank };
+    }).sort(function (a, b) { return (a.avg || -1) - (b.avg || -1); }).reverse();
     squadList().forEach(function (p) {
-      if (!m.rows[p.name]) list.push({ name: p.name, rank: null, avg: null, cut: false });
+      if (!m.rows[p.name]) list.push({ name: p.name, rank: null, avg: null, rankTot: null, cut: false });
     });
     lastRows = list.map(function (e) { return byName(e.name); }).filter(Boolean);
     host.innerHTML =
@@ -616,10 +617,11 @@
         var face = r && r.img ? "<img class='face' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
         return "<tr data-n='" + esc(e.name) + "'><td>" + (list.indexOf(e) + 1) + "</td>" +
           "<td><span class='who'>" + face + "<strong>" + esc(e.name) + "</strong></span></td>" +
-          "<td>" + (e.cut ? e.avg + (m.unit ? " " + esc(m.unit) : "") : "–") + "</td>" +
-          "<td>" + (e.cut ? "<span class='rank'>#" + e.rank + "</span>" : "<span class='muted'>outside cut</span>") + "</td></tr>";
+          "<td>" + (e.avg !== null && e.avg !== undefined ? e.avg + (m.unit ? " " + esc(m.unit) : "") : "–") + "</td>" +
+          "<td>" + (e.cut ? "<span class='rank'>#" + e.rank + "</span>"
+            : (e.rankTot ? "<span class='muted'>#" + e.rankTot + " totals</span>" : "<span class='muted'>outside cut</span>")) + "</td></tr>";
       }).join("") + "</tbody></table></div>" +
-      '<div class="count muted">All 37 on the list. Per-game 2026 leaderboards via Footywire; unranked players finished outside the published cut.</div>';
+      '<div class="count muted">All 37 on the list. Gold badges are per-game league ranks; grey ranks are season-totals ranks (averages shown are per-game). Unranked players finished outside the published cuts or did not play.</div>';
     Array.prototype.forEach.call(host.querySelectorAll("[data-adv]"), function (b) {
       b.addEventListener("click", function () { state.advM = b.getAttribute("data-adv"); save(); renderAdvanced(host); });
     });
