@@ -212,6 +212,9 @@ tbody tr.out-row td:first-child { border-left: 4px solid var(--red); }
 tbody tr.ret-row td:first-child { border-left: 4px solid var(--navy-2); }
 .pill { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 10px; }
 .pill.in { background: #e2f2e7; color: var(--green); }
+.pill.unav { background: #fdf0d5; color: #7a5200; margin-left: 6px; }
+.grprow td { background: var(--navy); color: #fff; font-weight: 800; font-size: 13.5px; letter-spacing: 0.4px; }
+.tsep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 4px; }
 .pill.out { background: #fbe4e5; color: var(--red-dark); }
 .pill.ret { background: #e6ebf5; color: var(--navy); }
 .muted { color: var(--muted); font-size: 13px; }

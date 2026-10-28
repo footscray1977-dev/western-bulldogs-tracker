@@ -22,6 +22,9 @@
       if (saved.q) state.q = saved.q;
       if (saved.pos) state.pos = saved.pos;
       if (saved.gradeBand) state.gradeBand = saved.gradeBand;
+      if (saved.view) state.view = saved.view;
+      if (saved.minG !== undefined) state.minG = saved.minG;
+      if (saved.grouped !== undefined) state.grouped = saved.grouped;
       if (saved.sortKey) state.sortKey = saved.sortKey;
       if (saved.sortDir) state.sortDir = saved.sortDir;
     }
@@ -75,6 +78,32 @@
 
   function bandOf(r) { return r.grade ? r.grade.charAt(0) : "–"; }
 
+  function lineOf(r) {
+    var p = r.pos || "";
+    if (p.indexOf("Ruck") > -1) return "Ruck";
+    var first = p.split("/")[0];
+    if (first === "Wing") return "Mid";
+    if (first === "Def" || first === "Mid" || first === "Fwd") return first;
+    return "Mid";
+  }
+  var LINES = ["Def", "Mid", "Fwd", "Ruck"];
+  var LINE_NAMES = { Def: "Defenders", Mid: "Midfielders", Fwd: "Forwards", Ruck: "Rucks" };
+
+  function toolsHTML() {
+    var seg = function (key, opts) {
+      return opts.map(function (o) {
+        return '<button class="gbtn" data-k="' + key + '" data-v="' + o[0] + '" aria-pressed="' + (state[key] === o[0]) + '">' + o[1] + "</button>";
+      }).join("");
+    };
+    return '<div class="gbands" role="group" aria-label="Squad view options">' +
+      seg("view", [["career", "Career totals"], ["season", "2026 figures"]]) +
+      '<span class="tsep"></span>' +
+      seg("minG", [[0, "Any games"], [5, "5+ games"], [10, "10+ games"]]) +
+      '<span class="tsep"></span>' +
+      '<button class="gbtn" data-k="grouped" data-v="toggle" aria-pressed="' + (state.grouped === true) + '">Group by line</button>' +
+      "</div>";
+  }
+
   function bandsHTML(squad) {
     var counts = { All: squad.length };
     squad.forEach(function (r) {
@@ -94,12 +123,17 @@
   function render() {
     renderPosFilter();
     if (!state.gradeBand) state.gradeBand = "All";
+    if (!state.view) state.view = "career";
+    if (state.minG === undefined) state.minG = 0;
+    if (state.grouped === undefined) state.grouped = false;
+    var season = state.view === "season";
     var rows = rowsForTab().filter(function (r) {
       var q = state.q.toLowerCase();
       var hitQ = !q || r.name.toLowerCase().indexOf(q) > -1;
       var hitP = state.pos === "All" || (r.pos || "").split("/").indexOf(state.pos) > -1;
       var hitB = state.gradeBand === "All" || bandOf(r) === state.gradeBand;
-      return hitQ && hitP && hitB;
+      var hitM = (r.g2026 || 0) >= state.minG;
+      return hitQ && hitP && hitB && hitM;
     });
     rows.sort(function (a, b) {
       var k = state.sortKey;
@@ -125,38 +159,55 @@
 
     lastRows = rows;
     var squad = rowsForTab();
-    var maxGames = Math.max.apply(null, squad.map(function (r) { return r.games || 0; }).concat([1]));
+    var gk = season ? "g2026" : "games";
+    var maxGames = Math.max.apply(null, squad.map(function (r) { return r[gk] || 0; }).concat([1]));
 
     var th = function (k, label) {
       var a = state.sortKey === k ? ' <span class="arrow">' + (state.sortDir === 1 ? "▲" : "▼") + "</span>" : "";
       var sel = state.sortKey === k ? (state.sortDir === 1 ? "ascending" : "descending") : "none";
       return '<th data-k="' + k + '" aria-sort="' + sel + '">' + label + a + "</th>";
     };
-    var html = leadersHTML(squad) + shapeHTML(squad) + bandsHTML(squad) +
+    var dash = function (v) { return (v === null || v === undefined || v === "") ? "–" : v; };
+    var rowHTML = function (r, i) {
+      var cls = r._s === "in" ? "in-row" : "ret-row";
+      var tip = esc(r.honours || r.via || r.note || "");
+      var face = r.img ? "<img class='face' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
+      var gv = season ? r.g2026 : r.games;
+      var gl = season ? r.gl2026 : r.goals;
+      var pct = gv ? Math.max(3, Math.round(gv / maxGames * 100)) : 0;
+      var avail = r.avail ? ' <span class="pill unav">' + esc(r.avail) + "</span>" : "";
+      return "<tr class='" + cls + "' data-i='" + i + "'><td><span class='who'>" + face + "<span><strong" + (tip ? " title='" + tip + "'" : "") + ">" + esc(r.name) + "</strong>" +
+        (r.role ? ' <span class="muted">(' + esc(r.role) + ")</span>" : "") +
+        (r.num ? ' <span class="muted">#' + esc(r.num) + "</span>" : "") + avail + "</span></span></td>" +
+        "<td>" + pill(r._s) + "</td>" +
+        "<td>" + esc(r.pos || "–") + "</td>" +
+        "<td><span class='grade g" + esc((r.grade || "u").replace("+", "p")) + "'>" + dash(r.grade) + "</span></td>" +
+        "<td><span class='gcell'><span class='gbar'><i style='width:" + pct + "%'></i></span>" + dash(gv) + "</span></td>" +
+        "<td>" + dash(gl) + "</td>" +
+        "<td>" + (r.avgD === null || r.avgD === undefined ? "–" : r.avgD.toFixed(1)) + "</td>" +
+        "<td>" + (r.rankBest ? "<span class='rank'>#" + r.rankBest + " " + esc(r.rankCat || "") + "</span>" : "–") + "</td>" +
+        "<td>" + dash(r.ht) + "</td>" +
+        "<td class='muted'>" + dash(r.dob) + "</td></tr>";
+    };
+    var body;
+    if (state.grouped) {
+      body = LINES.map(function (ln) {
+        var members = rows.filter(function (r) { return lineOf(r) === ln; });
+        if (!members.length) return "";
+        return "<tr class='grprow'><td colspan='10'>" + LINE_NAMES[ln] + " · " + members.length + "</td></tr>" +
+          members.map(function (r) { return rowHTML(r, rows.indexOf(r)); }).join("");
+      }).join("");
+    } else {
+      body = rows.map(function (r, i) { return rowHTML(r, i); }).join("");
+    }
+    var html = leadersHTML(squad) + shapeHTML(squad) + bandsHTML(squad) + toolsHTML() +
       '<div class="tscroll"><table><thead><tr>' +
       th("name", "Player") + th("_s", "Status") + th("pos", "Pos") + th("grade", "Grade") +
-      th("games", "Games") + th("goals", "Goals") + th("avgD", "2026 Avg") + th("rankBest", "AFL Rank") +
+      th(season ? "g2026" : "games", season ? "2026 G" : "Games") +
+      th(season ? "gl2026" : "goals", season ? "2026 Gl" : "Goals") +
+      th("avgD", "2026 Avg") + th("rankBest", "AFL Rank") +
       th("ht", "Ht") + th("dob", "Born") +
-      "</tr></thead><tbody>" +
-      rows.map(function (r, i) {
-        var cls = r._s === "in" ? "in-row" : "ret-row";
-        var dash = function (v) { return (v === null || v === undefined || v === "") ? "–" : v; };
-        var tip = esc(r.honours || r.via || r.note || "");
-        var face = r.img ? "<img class='face' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
-        var pct = r.games ? Math.max(3, Math.round(r.games / maxGames * 100)) : 0;
-        return "<tr class='" + cls + "' data-i='" + i + "'><td><span class='who'>" + face + "<span><strong" + (tip ? " title='" + tip + "'" : "") + ">" + esc(r.name) + "</strong>" +
-          (r.role ? ' <span class="muted">(' + esc(r.role) + ")</span>" : "") +
-          (r.num ? ' <span class="muted">#' + esc(r.num) + "</span>" : "") + "</span></span></td>" +
-          "<td>" + pill(r._s) + "</td>" +
-          "<td>" + esc(r.pos || "–") + "</td>" +
-          "<td><span class='grade g" + esc((r.grade || "u").replace("+", "p")) + "'>" + dash(r.grade) + "</span></td>" +
-          "<td><span class='gcell'><span class='gbar'><i style='width:" + pct + "%'></i></span>" + dash(r.games) + "</span></td>" +
-          "<td>" + dash(r.goals) + "</td>" +
-          "<td>" + (r.avgD === null || r.avgD === undefined ? "–" : r.avgD.toFixed(1)) + "</td>" +
-          "<td>" + (r.rankBest ? "<span class='rank'>#" + r.rankBest + " " + esc(r.rankCat || "") + "</span>" : "–") + "</td>" +
-          "<td>" + dash(r.ht) + "</td>" +
-          "<td class='muted'>" + dash(r.dob) + "</td></tr>";
-      }).join("") + "</tbody></table></div>" +
+      "</tr></thead><tbody>" + body + "</tbody></table></div>" +
       '<div class="count muted">Click a row for the full player profile. 2026 averages + AFL ranks via Footywire; grades via Draftguru.</div>' +
       '<div class="count">' + rows.length + " of " + squad.length + " on the 2027 list view</div>";
     host.innerHTML = html;
@@ -175,7 +226,14 @@
     });
     Array.prototype.forEach.call(host.querySelectorAll(".gbtn"), function (b) {
       b.addEventListener("click", function () {
-        state.gradeBand = b.getAttribute("data-band");
+        if (b.getAttribute("data-band") !== null) {
+          state.gradeBand = b.getAttribute("data-band");
+        } else {
+          var k = b.getAttribute("data-k"), v = b.getAttribute("data-v");
+          if (k === "grouped") state.grouped = !state.grouped;
+          else if (k === "minG") state.minG = +v;
+          else state[k] = v;
+        }
         save();
         render();
       });
@@ -285,6 +343,8 @@
       ["Status", pill(r._s)], ["Position", dash(r.pos)], ["Grade", dash(r.grade)],
       ["Guernsey", r.num ? "#" + esc(r.num) : "TBC"], ["Born", dash(r.dob)],
       ["Height", dash(r.ht)], ["Drafted", dash(r.drafted)],
+      ["Contract", r.contract ? esc(r.contract) : "TBC"],
+      ["Availability", r.avail ? esc(r.avail) : "Available"],
       ["Career", (r.games !== undefined && r.games !== null) ? r.games + " games · " + r.goals + " goals" : "–"],
       ["2026 average", avgLine],
       ["AFL rank", r.rankBest ? "#" + r.rankBest + " " + esc(r.rankCat || "") + " per game" : "Unranked"]
