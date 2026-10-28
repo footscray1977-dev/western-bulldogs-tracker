@@ -27,6 +27,7 @@
   <button class="tab" data-tab="squad" aria-selected="true">Squad</button>
   <button class="tab" data-tab="ins" aria-selected="false">Trade &amp; Free-Agency Ins</button>
   <button class="tab" data-tab="outs" aria-selected="false">Outs: Delisted &amp; Retired</button>
+  <button class="tab" data-tab="timeline" aria-selected="false">Off-season timeline</button>
   <button class="tab" data-tab="guide" aria-selected="false">How to update</button>
 </nav>
 
@@ -34,6 +35,7 @@
   <input id="search" type="search" placeholder="Search players…" aria-label="Search players">
   <select id="posFilter" aria-label="Filter by position"></select>
   <button id="exportBtn" type="button">Export CSV</button>
+  <button id="darkBtn" type="button" aria-label="Toggle dark mode">Dark</button>
 </div>
 
 <main>
@@ -44,6 +46,13 @@
   <p id="sources"></p>
   <p>Tip: this page works offline from a single folder. To publish it, push the folder to GitHub and import it in Vercel — see README.md.</p>
 </footer>
+
+<div id="modal" aria-hidden="true" role="dialog" aria-label="Player profile">
+  <div class="mbox">
+    <button id="modalClose" type="button" aria-label="Close profile">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
 
 <script src="data/players.js"></script>
 <script src="app.js"></script>

@@ -72,6 +72,17 @@ window.BULLDOGS_DATA = {
     { name: "Michael Sellwood", pos: "Def", num: "37", grade: "D", dob: "2 Oct 03", ht: "186cm", games: 24, goals: 0, g2026: 24, gl2026: 0, drafted: "#5 Mid-Season 2024", honours: "", img: "https://s.afl.com.au/staticfile/AFL%20Tenant/AFL/Players/ChampIDImages/AFL/2026014/1020621.png?im=Scale,width=200,height=200" },
   ],
 
+  // ---- Off-season timeline (month-level precision; exact-day TBC) -----------
+  timeline: [
+    { when: "Late Sep 2026", what: "First delisting wave", detail: "Oskar Baker, Harvey Gallagher, Lachlan Smith and Zac Walker delisted after the season ends." },
+    { when: "6–13 Oct 2026", what: "Trade Period", detail: "Finn Maginness (Hawthorn) and Hudson O'Keeffe (Carlton) traded in via pick swaps; Jordon Butts arrives as a free agent." },
+    { when: "9 Oct 2026", what: "Zak Butters signs", detail: "Three-time All-Australian leaves Port Adelaide as a free agent; unveiled at Whitten Oval on 11 Oct." },
+    { when: "Mid Oct 2026", what: "Second delisting wave", detail: "Nick Coffield, Ryan Gardner and Lachie McNeil delisted after the trade intake." },
+    { when: "Late Oct 2026", what: "Garcia rookie lifeline", detail: "Riley Garcia delisted with a club commitment to re-select him in the Rookie Draft." },
+    { when: "Oct 2026", what: "Retirements", detail: "Tom Liberatore, Adam Treloar and James Harmes call time." },
+    { when: "Nov 2026", what: "Drafts", detail: "National + Rookie Drafts (incl. Garcia re-draft) — add selections to retained above." }
+  ],
+
   // ---- OUT: delistings, retirements ----------------------------------------
   outs: [
     { name: "Oskar Baker", move: "Delisted", detail: "Former Demon; first delisting wave post-season.", num: "13", grade: "C", dob: "25 May 98", ht: "182cm", games: 57, goals: 23, g2026: 9, gl2026: 9, drafted: "#48 National 2017", honours: "", img: "https://s.afl.com.au/staticfile/AFL%20Tenant/AFL/Players/ChampIDImages/AFL/2026014/1008855.png?im=Scale,width=200,height=200" },
