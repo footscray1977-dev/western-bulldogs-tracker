@@ -28,6 +28,7 @@
       if (saved.lfam) state.lfam = saved.lfam;
       if (saved.lsort) state.lsort = saved.lsort;
       if (saved.ldir) state.ldir = saved.ldir;
+      if (saved.lmin !== undefined) state.lmin = saved.lmin;
       if (saved.cmpA) state.cmpA = saved.cmpA;
       if (saved.cmpB) state.cmpB = saved.cmpB;
       if (saved.advM) state.advM = saved.advM;
@@ -454,10 +455,11 @@
   function renderLeaders(host) {
     if (!state.lfam || !FAMS[state.lfam]) state.lfam = "general";
     if (!state.lsort) { state.lsort = "avgD"; state.ldir = -1; }
+    if (state.lmin === undefined) state.lmin = 0;
     var fam = FAMS[state.lfam];
     var pool = DATA.ins.map(function (p) { p._s = "in"; return p; })
       .concat(DATA.retained.map(function (p) { p._s = "ret"; return p; }))
-      .filter(function (r) { return (r.g2026 || 0) >= 5; });
+      .filter(function (r) { return (r.g2026 || 0) >= state.lmin; });
     pool.sort(function (a, b) {
       var k = state.lsort, av = a[k], bv = b[k];
       if (av === null || av === undefined) return 1;
@@ -476,7 +478,10 @@
     var html = '<div class="gbands" role="group" aria-label="Stat families">' +
       Object.keys(FAMS).map(function (f) {
         return '<button class="gbtn" data-lfam="' + f + '" aria-pressed="' + (state.lfam === f) + '">' + FAMS[f].label + "</button>";
-      }).join("") + "</div>" +
+      }).join("") +
+      '<span class="tsep"></span>' +
+      '<button class="gbtn" data-lmin="0" aria-pressed="' + (state.lmin === 0) + '">All players</button>' +
+      '<button class="gbtn" data-lmin="5" aria-pressed="' + (state.lmin === 5) + '">5+ games</button></div>' +
       '<div class="tscroll"><table><thead><tr><th>#</th><th>Player</th>' +
       fam.cols.map(function (c) {
         var a = state.lsort === c[0] ? ' <span class="arrow">' + (state.ldir === 1 ? "▲" : "▼") + "</span>" : "";
@@ -489,13 +494,19 @@
           "<strong>" + esc(r.name) + "</strong></span></td>" +
           fam.cols.map(function (c) { return "<td>" + cell(r, c[0]) + "</td>"; }).join("") + "</tr>";
       }).join("") + "</tbody></table></div>" +
-      '<div class="count muted">Minimum 5 games in 2026. Averages via Footywire; ranks are best per-game league ranks. Hover a header for the definition.</div>';
+      '<div class="count muted">' + (state.lmin ? "Minimum 5 games in 2026. " : "All 37 on the list, including debutants yet to record an average. ") + 'Averages via Footywire; ranks are best per-game league ranks. Hover a header for the definition.</div>';
     host.innerHTML = html;
     Array.prototype.forEach.call(host.querySelectorAll("[data-lfam]"), function (b) {
       b.addEventListener("click", function () {
         state.lfam = b.getAttribute("data-lfam");
         var first = FAMS[state.lfam].cols[0][0];
         state.lsort = first; state.ldir = -1;
+        save(); renderLeaders(host);
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("[data-lmin]"), function (b) {
+      b.addEventListener("click", function () {
+        state.lmin = +b.getAttribute("data-lmin");
         save(); renderLeaders(host);
       });
     });
@@ -579,8 +590,11 @@
     if (!state.advM || !ADV.metrics[state.advM]) state.advM = codes[0];
     var m = ADV.metrics[state.advM];
     var list = Object.keys(m.rows).map(function (n) {
-      return { name: n, rank: m.rows[n].rank, avg: m.rows[n].avg };
+      return { name: n, rank: m.rows[n].rank, avg: m.rows[n].avg, cut: true };
     }).sort(function (a, b) { return a.avg - b.avg; }).reverse();
+    squadList().forEach(function (p) {
+      if (!m.rows[p.name]) list.push({ name: p.name, rank: null, avg: null, cut: false });
+    });
     lastRows = list.map(function (e) { return byName(e.name); }).filter(Boolean);
     host.innerHTML =
       '<div class="gbands" role="group" aria-label="Advanced metrics">' +
@@ -594,10 +608,10 @@
         var face = r && r.img ? "<img class='face' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
         return "<tr data-n='" + esc(e.name) + "'><td>" + (list.indexOf(e) + 1) + "</td>" +
           "<td><span class='who'>" + face + "<strong>" + esc(e.name) + "</strong></span></td>" +
-          "<td>" + e.avg + (m.unit ? " " + esc(m.unit) : "") + "</td>" +
-          "<td><span class='rank'>#" + e.rank + "</span></td></tr>";
+          "<td>" + (e.cut ? e.avg + (m.unit ? " " + esc(m.unit) : "") : "–") + "</td>" +
+          "<td>" + (e.cut ? "<span class='rank'>#" + e.rank + "</span>" : "<span class='muted'>outside cut</span>") + "</td></tr>";
       }).join("") + "</tbody></table></div>" +
-      '<div class="count muted">' + list.length + " Bulldogs ranked. Per-game 2026 leaderboards via Footywire; only ranked players appear — the rest were outside the cut.</div>";
+      '<div class="count muted">All 37 on the list. Per-game 2026 leaderboards via Footywire; unranked players finished outside the published cut.</div>';
     Array.prototype.forEach.call(host.querySelectorAll("[data-adv]"), function (b) {
       b.addEventListener("click", function () { state.advM = b.getAttribute("data-adv"); save(); renderAdvanced(host); });
     });
@@ -616,13 +630,18 @@
     });
     all.sort(function (a, b) { return a.rank - b.rank || String(a.name).localeCompare(String(b.name)); });
     lastRows = all.map(function (e) { return byName(e.name); }).filter(Boolean);
+    var ranked = {};
+    all.forEach(function (e) { ranked[e.name] = true; });
+    var rest = squadList().filter(function (p) { return !ranked[p.name]; })
+      .map(function (p) { return p.name; }).sort();
     host.innerHTML =
       '<div class="tscroll"><table><thead><tr><th>AFL rank</th><th>Player</th><th>Category</th></tr></thead><tbody>' +
       all.map(function (e, i) {
         return "<tr data-i='" + i + "'><td><span class='rank'>#" + e.rank + "</span></td>" +
           "<td><strong>" + esc(e.name) + "</strong></td><td>" + esc(e.cat) + " per game</td></tr>";
       }).join("") + "</tbody></table></div>" +
-      '<div class="count muted">' + all.length + " top-ranking entries held by Bulldogs in 2026, best first. Per-game leaderboards via Footywire. Click a row for the profile.</div>";
+      '<div class="count muted">' + all.length + " top-ranking entries held by Bulldogs in 2026, best first. Per-game leaderboards via Footywire. Click a row for the profile.</div>" +
+      "<p class='muted'>Also on the list — outside the ranked cuts: " + rest.map(esc).join(", ") + ".</p>";
     Array.prototype.forEach.call(host.querySelectorAll("tbody tr"), function (tr) {
       tr.addEventListener("click", function () { openModal(lastRows[+tr.getAttribute("data-i")]); });
     });
