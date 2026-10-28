@@ -54,7 +54,9 @@
       host.innerHTML = '<div class="cards">' + rows.map(function (r) {
         var cls = r._s === "in" ? "in-row" : "out-row";
         var rec = (r.games !== undefined && r.games !== null) ? r.games + " games, " + r.goals + " goals" : "";
-        return '<div class="card ' + cls + '"><h3>' + esc(r.name) + "</h3>" +
+        return '<div class="card ' + cls + '"><h3>' +
+          (r.img ? "<img class='face big' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "") +
+          esc(r.name) + "</h3>" +
           '<div class="via">' + esc(r.via || r.move || "") + (rec ? " · " + rec : "") + "</div>" +
           '<div class="muted">' + esc(r.note || r.detail || "") + "</div>" +
           (r.honours ? '<div class="muted">Honours: ' + esc(r.honours) + "</div>" : "") + "</div>";
@@ -79,9 +81,10 @@
         var cls = r._s === "in" ? "in-row" : "ret-row";
         var dash = function (v) { return (v === null || v === undefined || v === "") ? "–" : v; };
         var tip = esc(r.honours || r.via || r.note || "");
-        return "<tr class='" + cls + "'><td><strong" + (tip ? " title='" + tip + "'" : "") + ">" + esc(r.name) + "</strong>" +
+        var face = r.img ? "<img class='face' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
+        return "<tr class='" + cls + "'><td><span class='who'>" + face + "<span><strong" + (tip ? " title='" + tip + "'" : "") + ">" + esc(r.name) + "</strong>" +
           (r.role ? ' <span class="muted">(' + esc(r.role) + ")</span>" : "") +
-          (r.num ? ' <span class="muted">#' + esc(r.num) + "</span>" : "") + "</td>" +
+          (r.num ? ' <span class="muted">#' + esc(r.num) + "</span>" : "") + "</span></span></td>" +
           "<td>" + pill(r._s) + "</td>" +
           "<td>" + esc(r.pos || "–") + "</td>" +
           "<td>" + dash(r.grade) + "</td>" +

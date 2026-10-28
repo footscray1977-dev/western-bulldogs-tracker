@@ -115,6 +115,10 @@ tbody tr.ret-row td:first-child { border-left: 4px solid var(--navy-2); }
 .pill.out { background: #fbe4e5; color: var(--red-dark); }
 .pill.ret { background: #e6ebf5; color: var(--navy); }
 .muted { color: var(--muted); font-size: 13px; }
+.who { display: flex; align-items: center; gap: 10px; }
+.face { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--wash); border: 1px solid var(--line); flex: none; }
+.face.big { width: 44px; height: 44px; vertical-align: middle; margin-right: 8px; }
+.card h3 { display: flex; align-items: center; }
 .count { padding: 10px 2px; color: var(--muted); font-size: 13px; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
