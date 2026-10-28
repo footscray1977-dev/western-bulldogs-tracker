@@ -1,7 +1,8 @@
 (function () {
   "use strict";
   var DATA = window.BULLDOGS_DATA;
-  var state = { tab: "squad", q: "", pos: "All", sortKey: "name", sortDir: 1 };
+  var state = { tab: "squad", q: "", pos: "All", sortKey: "grade", sortDir: -1 };
+  var GRADE_RANK = { "A+": 7, "A": 6, "B+": 5, "B": 4, "C+": 3, "C": 2, "D": 1 };
 
   function $(id) { return document.getElementById(id); }
 
@@ -43,6 +44,11 @@
     });
     rows.sort(function (a, b) {
       var k = state.sortKey;
+      if (k === "grade") {
+        var ar = GRADE_RANK[a.grade] || 0, br = GRADE_RANK[b.grade] || 0;
+        if (ar !== br) return (ar - br) * state.sortDir;
+        return String(a.name).localeCompare(String(b.name));
+      }
       var av = (a[k] === null || a[k] === undefined) ? "" : a[k];
       var bv = (b[k] === null || b[k] === undefined) ? "" : b[k];
       if (typeof av === "number" && typeof bv === "number") return (av - bv) * state.sortDir;
