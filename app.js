@@ -25,6 +25,9 @@
       if (saved.view) state.view = saved.view;
       if (saved.minG !== undefined) state.minG = saved.minG;
       if (saved.grouped !== undefined) state.grouped = saved.grouped;
+      if (saved.lfam) state.lfam = saved.lfam;
+      if (saved.lsort) state.lsort = saved.lsort;
+      if (saved.ldir) state.ldir = saved.ldir;
       if (saved.sortKey) state.sortKey = saved.sortKey;
       if (saved.sortDir) state.sortDir = saved.sortDir;
     }
@@ -35,7 +38,13 @@
 
   function $(id) { return document.getElementById(id); }
 
-  var TABS = ["squad", "players", "moves", "timeline", "about"];
+  var TABS = ["squad", "leaders", "players", "moves", "timeline", "about"];
+  var FAMS = {
+    general: { label: "General", cols: [["games", "Games", "Career games"], ["goals", "Goals", "Career goals"], ["g2026", "2026 G", "Games played in 2026"], ["avgD", "Avg Disp", "Disposals per game, 2026"], ["rankBest", "AFL Rank", "Best per-game league rank, 2026"]] },
+    ball: { label: "Ball winners", cols: [["avgK", "Kicks", "Kicks per game, 2026"], ["avgHB", "Handballs", "Handballs per game, 2026"], ["avgD", "Disposals", "Disposals per game, 2026"], ["avgM", "Marks", "Marks per game, 2026"]] },
+    defence: { label: "Defence", cols: [["avgT", "Tackles", "Tackles per game, 2026"], ["avgM", "Marks", "Marks per game, 2026"], ["g2026", "2026 G", "Games played in 2026"]] },
+    fantasy: { label: "Fantasy", cols: [["avgAF", "AF Avg", "AFL Fantasy average, 2026"], ["avgSC", "SC Avg", "SuperCoach average, 2026"], ["avgD", "Avg Disp", "Disposals per game, 2026"]] }
+  };
   var suppressHash = false;
 
   function rowsForTab() {
@@ -365,6 +374,67 @@
 
   function closeModal() { $("modal").setAttribute("aria-hidden", "true"); }
 
+  function renderLeaders(host) {
+    if (!state.lfam || !FAMS[state.lfam]) state.lfam = "general";
+    if (!state.lsort) { state.lsort = "avgD"; state.ldir = -1; }
+    var fam = FAMS[state.lfam];
+    var pool = DATA.ins.map(function (p) { p._s = "in"; return p; })
+      .concat(DATA.retained.map(function (p) { p._s = "ret"; return p; }))
+      .filter(function (r) { return (r.g2026 || 0) >= 5; });
+    pool.sort(function (a, b) {
+      var k = state.lsort, av = a[k], bv = b[k];
+      if (av === null || av === undefined) return 1;
+      if (bv === null || bv === undefined) return -1;
+      if (av !== bv) return (av - bv) * state.ldir;
+      return String(a.name).localeCompare(String(b.name));
+    });
+    lastRows = pool;
+    var cell = function (r, k) {
+      var v = r[k];
+      if (v === null || v === undefined) return "–";
+      if (k === "rankBest") return "<span class='rank'>#" + v + " " + esc(r.rankCat || "") + "</span>";
+      if (typeof v === "number" && (k.indexOf("avg") === 0)) return v.toFixed(1);
+      return v;
+    };
+    var html = '<div class="gbands" role="group" aria-label="Stat families">' +
+      Object.keys(FAMS).map(function (f) {
+        return '<button class="gbtn" data-lfam="' + f + '" aria-pressed="' + (state.lfam === f) + '">' + FAMS[f].label + "</button>";
+      }).join("") + "</div>" +
+      '<div class="tscroll"><table><thead><tr><th>#</th><th>Player</th>' +
+      fam.cols.map(function (c) {
+        var a = state.lsort === c[0] ? ' <span class="arrow">' + (state.ldir === 1 ? "▲" : "▼") + "</span>" : "";
+        var sel = state.lsort === c[0] ? (state.ldir === 1 ? "ascending" : "descending") : "none";
+        return '<th data-lk="' + c[0] + '" aria-sort="' + sel + '" title="' + esc(c[2]) + '">' + esc(c[1]) + a + "</th>";
+      }).join("") + "</tr></thead><tbody>" +
+      pool.map(function (r, i) {
+        var face = r.img ? "<img class='face' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
+        return "<tr data-i='" + i + "'><td>" + (i + 1) + "</td><td><span class='who'>" + face +
+          "<strong>" + esc(r.name) + "</strong></span></td>" +
+          fam.cols.map(function (c) { return "<td>" + cell(r, c[0]) + "</td>"; }).join("") + "</tr>";
+      }).join("") + "</tbody></table></div>" +
+      '<div class="count muted">Minimum 5 games in 2026. Averages via Footywire; ranks are best per-game league ranks. Hover a header for the definition.</div>';
+    host.innerHTML = html;
+    Array.prototype.forEach.call(host.querySelectorAll("[data-lfam]"), function (b) {
+      b.addEventListener("click", function () {
+        state.lfam = b.getAttribute("data-lfam");
+        var first = FAMS[state.lfam].cols[0][0];
+        state.lsort = first; state.ldir = -1;
+        save(); renderLeaders(host);
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("[data-lk]"), function (th) {
+      th.addEventListener("click", function () {
+        var k = th.getAttribute("data-lk");
+        if (state.lsort === k) state.ldir *= -1;
+        else { state.lsort = k; state.ldir = -1; }
+        save(); renderLeaders(host);
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("tbody tr"), function (tr) {
+      tr.addEventListener("click", function () { openModal(lastRows[+tr.getAttribute("data-i")]); });
+    });
+  }
+
   function renderTimeline() {
     $("content").innerHTML = '<ol class="timeline">' + DATA.timeline.map(function (t) {
       return '<li><span class="twhen">' + esc(t.when) + "</span>" +
@@ -427,6 +497,7 @@
       }
       if (name === "about") { renderGuide(); return; }
       if (name === "timeline") { renderTimeline(); return; }
+      if (name === "leaders") { renderLeaders($("content")); return; }
       render();
     };
     try {
