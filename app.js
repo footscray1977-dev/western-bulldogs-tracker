@@ -282,7 +282,7 @@
     wireCards(host);
   }
 
-  var ORDER = { "Sep 2026": 1, "9 Oct 2026": 2, "Oct 2026": 3, "Nov 2026": 4 };
+  var ORDER = { "10 Feb 2026": 0, "Sep 2026": 1, "9 Oct 2026": 2, "Oct 2026": 3, "Nov 2026": 4 };
 
   function renderMoves(host, rows) {
     if (!state.mkind) state.mkind = "All";
