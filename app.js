@@ -32,12 +32,25 @@
 
   function $(id) { return document.getElementById(id); }
 
+  var TABS = ["squad", "players", "moves", "timeline", "about"];
+  var suppressHash = false;
+
   function rowsForTab() {
-    if (state.tab === "ins") return DATA.ins.map(function (p) { p._s = "in"; return p; });
-    if (state.tab === "outs") return DATA.outs.map(function (p) { p._s = "out"; return p; });
+    if (state.tab === "moves") {
+      return DATA.ins.map(function (p) { p._s = "in"; return p; })
+        .concat(DATA.outs.map(function (p) { p._s = "out"; return p; }));
+    }
     var squad = DATA.ins.map(function (p) { p._s = "in"; return p; })
       .concat(DATA.retained.map(function (p) { p._s = "ret"; return p; }));
     return squad;
+  }
+
+  function parseHash() {
+    try {
+      var m = (location.hash || "").match(/^#\/(\w+)/);
+      if (m && TABS.indexOf(m[1]) > -1) return m[1];
+    } catch (e) { /* no location */ }
+    return null;
   }
 
   function positions(rows) {
@@ -107,24 +120,8 @@
     });
 
     var host = $("content");
-    if (state.tab === "ins" || state.tab === "outs") {
-      lastRows = rows;
-      host.innerHTML = '<div class="cards">' + rows.map(function (r, i) {
-        var cls = r._s === "in" ? "in-row" : "out-row";
-        var rec = (r.games !== undefined && r.games !== null) ? r.games + " games, " + r.goals + " goals" : "";
-        return '<div class="card ' + cls + '" data-i="' + i + '"><h3>' +
-          (r.img ? "<img class='face big' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "") +
-          esc(r.name) + "</h3>" +
-          '<div class="via">' + esc(r.via || r.move || "") + (rec ? " · " + rec : "") + "</div>" +
-          '<div class="muted">' + esc(r.note || r.detail || "") + "</div>" +
-          (r.honours ? '<div class="muted">Honours: ' + esc(r.honours) + "</div>" : "") + "</div>";
-      }).join("") + "</div>" +
-        '<div class="count">' + rows.length + " players. Click a card for the full profile.</div>";
-      Array.prototype.forEach.call(host.querySelectorAll(".card"), function (c) {
-        c.addEventListener("click", function () { openModal(lastRows[+c.getAttribute("data-i")]); });
-      });
-      return;
-    }
+    if (state.tab === "players") { renderPlayers(host, rows); return; }
+    if (state.tab === "moves") { renderMoves(host, rows); return; }
 
     lastRows = rows;
     var squad = rowsForTab();
@@ -183,6 +180,50 @@
         render();
       });
     });
+  }
+
+  function cardHTML(r, i) {
+    var cls = r._s === "in" ? "in-row" : (r._s === "out" ? "out-row" : "ret-row");
+    var rec = (r.games !== undefined && r.games !== null) ? r.games + " games, " + r.goals + " goals" : "";
+    return '<div class="card ' + cls + '" data-i="' + i + '"><h3>' +
+      (r.img ? "<img class='face big' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "") +
+      esc(r.name) + "</h3>" +
+      '<div class="via">' + esc(r.via || r.move || "") + (rec ? " · " + rec : "") + "</div>" +
+      '<div class="muted">' + esc(r.note || r.detail || "") + "</div>" +
+      (r.honours ? '<div class="muted">Honours: ' + esc(r.honours) + "</div>" : "") + "</div>";
+  }
+
+  function wireCards(host) {
+    Array.prototype.forEach.call(host.querySelectorAll(".card, .pcard"), function (c) {
+      c.addEventListener("click", function () { openModal(lastRows[+c.getAttribute("data-i")]); });
+    });
+  }
+
+  function renderPlayers(host, rows) {
+    lastRows = rows;
+    host.innerHTML = '<div class="pgrid">' + rows.map(function (r, i) {
+      var sub = (r.avgD ? r.avgD.toFixed(1) + " avg" : (r.games + " games")) +
+        (r.rankBest ? " · #" + r.rankBest + " " + esc(r.rankCat || "") : "");
+      return '<div class="pcard" data-i="' + i + '">' +
+        (r.img ? "<img src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "") +
+        "<div class='pname'>" + esc(r.name) + "</div>" +
+        "<div class='pmeta'>" + pill(r._s) + " <span class='muted'>" + esc(r.pos || "") + "</span></div>" +
+        "<div class='pstat'>" + sub + "</div></div>";
+    }).join("") + "</div>" +
+      '<div class="count">' + rows.length + " players. Click a card for the full profile.</div>";
+    wireCards(host);
+  }
+
+  function renderMoves(host, rows) {
+    lastRows = rows;
+    var ins = rows.filter(function (r) { return r._s === "in"; });
+    var outs = rows.filter(function (r) { return r._s === "out"; });
+    var group = function (title, list) {
+      return "<h2 class='movetitle'>" + title + " (" + list.length + ")</h2>" +
+        '<div class="cards">' + list.map(function (r) { return cardHTML(r, rows.indexOf(r)); }).join("") + "</div>";
+    };
+    host.innerHTML = group("Arrivals — trade & free agency", ins) + group("Departures — delisted & retired", outs);
+    wireCards(host);
   }
 
   function maxBy(rows, k) {
@@ -306,19 +347,35 @@
     $("statRet").textContent = retired;
     $("statSquad").textContent = DATA.ins.length + DATA.retained.length;
 
-    var showTab = function (name) {
+    var showTab = function (name, fromHash) {
+      if (TABS.indexOf(name) === -1) name = "squad";
       Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (x) {
         x.setAttribute("aria-selected", x.getAttribute("data-tab") === name ? "true" : "false");
       });
       state.tab = name;
-      var tools = (name === "squad");
-      $("search").style.display = tools ? "" : "none";
-      $("posFilter").style.display = tools ? "" : "none";
+      var searchOn = (name === "squad" || name === "players");
+      var posOn = (name === "squad");
+      $("search").style.display = searchOn ? "" : "none";
+      $("posFilter").style.display = posOn ? "" : "none";
+      $("exportBtn").style.display = (name === "about" || name === "timeline") ? "none" : "";
       save();
-      if (name === "guide") { renderGuide(); return; }
+      if (!fromHash) {
+        try {
+          suppressHash = true;
+          location.hash = "#/" + name;
+        } catch (e) { /* no location */ }
+      }
+      if (name === "about") { renderGuide(); return; }
       if (name === "timeline") { renderTimeline(); return; }
       render();
     };
+    try {
+      window.addEventListener("hashchange", function () {
+        if (suppressHash) { suppressHash = false; return; }
+        var h = parseHash();
+        if (h && h !== state.tab) showTab(h, true);
+      });
+    } catch (e) { /* no window */ }
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
       t.addEventListener("click", function () {
         state.pos = "All";
@@ -345,8 +402,8 @@
     foot.innerHTML = "Sources: " + DATA.meta.sources.map(function (s) {
       return '<a href="' + s.url + '" target="_blank" rel="noopener">' + esc(s.label) + "</a>";
     }).join(" · ");
-    if (["squad", "ins", "outs", "timeline", "guide"].indexOf(state.tab) === -1) state.tab = "squad";
-    showTab(state.tab);
+    var start = parseHash() || (TABS.indexOf(state.tab) > -1 ? state.tab : "squad");
+    showTab(start, true);
   }
 
   function renderGuide() {
