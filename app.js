@@ -12,6 +12,7 @@
       if (saved.tab) state.tab = saved.tab;
       if (saved.q) state.q = saved.q;
       if (saved.pos) state.pos = saved.pos;
+      if (saved.gradeBand) state.gradeBand = saved.gradeBand;
       if (saved.sortKey) state.sortKey = saved.sortKey;
       if (saved.sortDir) state.sortDir = saved.sortDir;
     }
@@ -50,13 +51,33 @@
     return '<span class="pill ret">RETAINED</span>';
   }
 
+  function bandOf(r) { return r.grade ? r.grade.charAt(0) : "–"; }
+
+  function bandsHTML(squad) {
+    var counts = { All: squad.length };
+    squad.forEach(function (r) {
+      var b = bandOf(r);
+      counts[b] = (counts[b] || 0) + 1;
+    });
+    var order = ["All", "A", "B", "C", "D", "–"];
+    var labels = { All: "All grades", A: "A band", B: "B band", C: "C band", D: "D band", "–": "Unrated" };
+    return '<div class="gbands" role="group" aria-label="Filter by grade band">' + order.filter(function (b) {
+      return counts[b];
+    }).map(function (b) {
+      return '<button class="gbtn" data-band="' + esc(b) + '" aria-pressed="' + (state.gradeBand === b) + '">' +
+        esc(labels[b]) + "<small>" + counts[b] + "</small></button>";
+    }).join("") + "</div>";
+  }
+
   function render() {
     renderPosFilter();
+    if (!state.gradeBand) state.gradeBand = "All";
     var rows = rowsForTab().filter(function (r) {
       var q = state.q.toLowerCase();
       var hitQ = !q || r.name.toLowerCase().indexOf(q) > -1;
       var hitP = state.pos === "All" || (r.pos || "").split("/").indexOf(state.pos) > -1;
-      return hitQ && hitP;
+      var hitB = state.gradeBand === "All" || bandOf(r) === state.gradeBand;
+      return hitQ && hitP && hitB;
     });
     rows.sort(function (a, b) {
       var k = state.sortKey;
@@ -100,7 +121,7 @@
       var sel = state.sortKey === k ? (state.sortDir === 1 ? "ascending" : "descending") : "none";
       return '<th data-k="' + k + '" aria-sort="' + sel + '">' + label + a + "</th>";
     };
-    var html = leadersHTML(squad) + shapeHTML(squad) +
+    var html = leadersHTML(squad) + shapeHTML(squad) + bandsHTML(squad) +
       '<table><thead><tr>' +
       th("name", "Player") + th("_s", "Status") + th("pos", "Pos") + th("grade", "Grade") +
       th("games", "Games") + th("goals", "Goals") + th("g2026", "2026 G·Gl") +
@@ -140,6 +161,13 @@
     Array.prototype.forEach.call(host.querySelectorAll("tbody tr"), function (tr) {
       tr.addEventListener("click", function () { openModal(lastRows[+tr.getAttribute("data-i")]); });
     });
+    Array.prototype.forEach.call(host.querySelectorAll(".gbtn"), function (b) {
+      b.addEventListener("click", function () {
+        state.gradeBand = b.getAttribute("data-band");
+        save();
+        render();
+      });
+    });
   }
 
   function maxBy(rows, k) {
@@ -177,8 +205,10 @@
         '<span class="btrack"><i style="width:' + Math.round(counts[g] / max * 100) + '%"></i></span>' +
         '<span class="bv">' + counts[g] + "</span></div>";
     }).join("");
+    var line = { Def: "Def", Mid: "Mid", Fwd: "Fwd", Ruck: "Ruck", Wing: "Wing" };
     var chips = Object.keys(pos).sort().map(function (p) {
-      return '<span class="chip">' + esc(p) + " · <strong>" + pos[p] + "</strong></span>";
+      var cls = line[p] ? "line-" + p : "line-other";
+      return '<span class="chip ' + cls + '">' + esc(p) + " · <strong>" + pos[p] + "</strong></span>";
     }).join("");
     return '<div class="panel"><div><h3>Grade spread</h3>' + bars + "</div>" +
       "<div><h3>Positional mix</h3><div class='chips'>" + chips + "</div></div></div>";
@@ -197,12 +227,14 @@
       return '<div class="mrow"><span>' + kv[0] + "</span><span>" + kv[1] + "</span></div>";
     }).join("");
     $("modalBody").innerHTML =
+      '<div class="mhead">' +
       (r.img ? "<img class='mface' src='" + r.img + "' alt='' onerror='this.remove()'>" : "") +
-      "<h2>" + esc(r.name) + "</h2>" +
+      "<div><h2>" + esc(r.name) + "</h2>" +
       '<div class="muted">' + esc(r.via || r.move || "") + (r.role ? " · " + esc(r.role) : "") + "</div>" +
-      rows +
-      (r.honours ? "<h3>Honours</h3><p>" + esc(r.honours) + "</p>" : "") +
-      ((r.note || r.detail) ? "<p class='muted'>" + esc(r.note || r.detail) + "</p>" : "");
+      "<div>" + pill(r._s) + "</div></div></div>" +
+      '<div class="mgrid">' + rows + "</div>" +
+      (r.honours ? "<h3>Honours</h3><div class='mhon'>" + esc(r.honours) + "</div>" : "") +
+      ((r.note || r.detail) ? "<p class='muted mnote'>" + esc(r.note || r.detail) + "</p>" : "");
     $("modal").setAttribute("aria-hidden", "false");
   }
 
