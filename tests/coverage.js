@@ -4,7 +4,7 @@
 // process and the player names found there are asserted against the roster.
 const { execFileSync } = require("child_process");
 
-const TABS = ["squad", "leaders", "players", "compare", "advanced", "ranks", "moves"];
+const TABS = ["squad", "leaders", "players", "compare", "advanced", "ranks", "ratings", "moves"];
 
 function renderNames(tab) {
   const src = `
@@ -47,7 +47,7 @@ const players = require("child_process").execFileSync(process.execPath, ["-e",
   "moves:[...d.ins,...d.outs].map(p=>p.name)}))"], { cwd: __dirname + "/.." }).toString();
 
 const { squad, moves } = JSON.parse(players);
-const expect = { squad, leaders: squad, players: squad, compare: squad, advanced: squad, ranks: squad, moves };
+const expect = { squad, leaders: squad, players: squad, compare: squad, advanced: squad, ranks: squad, ratings: squad, moves };
 
 let failures = 0;
 for (const tab of TABS) {

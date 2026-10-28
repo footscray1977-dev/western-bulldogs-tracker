@@ -32,6 +32,7 @@
       if (saved.cmpA) state.cmpA = saved.cmpA;
       if (saved.cmpB) state.cmpB = saved.cmpB;
       if (saved.advM) state.advM = saved.advM;
+      if (saved.rplayer) state.rplayer = saved.rplayer;
       if (saved.sortKey) state.sortKey = saved.sortKey;
       if (saved.sortDir) state.sortDir = saved.sortDir;
     }
@@ -42,7 +43,13 @@
 
   function $(id) { return document.getElementById(id); }
 
-  var TABS = ["squad", "leaders", "players", "compare", "advanced", "ranks", "moves", "timeline", "about"];
+  var TABS = ["squad", "leaders", "players", "compare", "advanced", "ranks", "ratings", "moves", "timeline", "about"];
+  var TRAITS = [
+    ["avgD", "Engine (disposals)"], ["avgK", "Kicking volume"], ["avgHB", "Handball game"],
+    ["avgM", "Marking"], ["avgT", "Tackling"], ["avgG", "Scoreboard (goals)"],
+    ["avgAF", "Fantasy impact"], ["MG", "Metres gained"], ["SI", "Score involvements"],
+    ["CP", "Contested ball"], ["CL", "Clearances"], ["I5", "Inside 50s"]
+  ];
   var ADV = window.ADV || { metrics: {}, ranks: {} };
   var FAMS = {
     general: { label: "General", cols: [["games", "Games", "Career games"], ["goals", "Goals", "Career goals"], ["g2026", "2026 G", "Games played in 2026"], ["avgD", "Avg Disp", "Disposals per game, 2026"], ["rankBest", "AFL Rank", "Best per-game league rank, 2026"]] },
@@ -444,6 +451,7 @@
       "<tr><td>Career</td><td>" + dash(r.games) + "</td><td>" + dash(r.goals) + "</td><td>–</td></tr>" +
       "</tbody></table>" +
       pctBarsHTML(r) +
+      "<p><button class='gbtn' data-ratings='" + esc(r.name) + "'>Full trait ratings →</button></p>" +
       "<h3>2027 game log</h3><p class='muted mnote'>Round-by-round lines land here after the season opener — no invented numbers, ever.</p>" +
       (r.honours ? "<h3>Honours</h3><div class='mhon'>" + esc(r.honours) + "</div>" : "") +
       ((r.note || r.detail) ? "<p class='muted mnote'>" + esc(r.note || r.detail) + "</p>" : "");
@@ -647,6 +655,70 @@
     });
   }
 
+  function traitValue(r, key) {
+    if (r[key] !== null && r[key] !== undefined) return r[key];
+    var m = ADV.metrics[key];
+    if (m && m.rows[r.name]) return m.rows[r.name].avg;
+    return null;
+  }
+
+  function tierOf(p) {
+    if (p === null) return null;
+    if (p >= 90) return "Elite";
+    if (p >= 65) return "Above average";
+    if (p >= 35) return "Average";
+    if (p >= 15) return "Below average";
+    return "Poor";
+  }
+  var TIER_CLS = { "Elite": "t-elite", "Above average": "t-above", "Average": "t-avg", "Below average": "t-below", "Poor": "t-poor" };
+
+  function pctVsLine(r, key, val) {
+    if (val === null) return null;
+    var group = peers(lineOf(r)).map(function (p) { return traitValue(p, key); })
+      .filter(function (x) { return x !== null; });
+    if (group.length < 3) return null;
+    var below = group.filter(function (x) { return x < val; }).length;
+    return Math.round(below / (group.length - 1) * 100);
+  }
+
+  function renderRatings(host) {
+    var list = squadList();
+    if (!state.rplayer || !list.some(function (p) { return p.name === state.rplayer; })) state.rplayer = "Marcus Bontempelli";
+    var r = byName(state.rplayer);
+    var cards = TRAITS.map(function (t) {
+      var v = traitValue(r, t[0]);
+      var p = pctVsLine(r, t[0], v);
+      var tier = tierOf(p);
+      return '<div class="tcard"><div class="thead">' + esc(t[1]) + "</div>" +
+        (tier ? "<span class='tier " + TIER_CLS[tier] + "'>" + tier + "</span>" +
+          '<div class="ptrack"><i style="width:' + p + '%"></i></div>' +
+          "<div class='tval'>P" + p + " vs " + esc(LINE_NAMES[lineOf(r)].toLowerCase()) +
+          " · " + v + " avg</div>"
+          : "<span class='tier t-na'>Unrated</span><div class='tval muted'>no 2026 data</div>") + "</div>";
+    }).join("");
+    var elite = TRAITS.filter(function (t) {
+      var p = pctVsLine(r, t[0], traitValue(r, t[0]));
+      return p !== null && p >= 90;
+    }).map(function (t) { return t[1]; });
+    host.innerHTML =
+      '<div class="cmphead"><select data-rplayer>' + list.map(function (p) {
+        return '<option value="' + esc(p.name) + '"' + (p.name === r.name ? " selected" : "") + ">" + esc(p.name) + "</option>";
+      }).join("") + "</select></div>" +
+      '<div class="mhead">' +
+      (r.img ? "<img class='mface' src='" + r.img + "' alt='' onerror='this.remove()'>" : "") +
+      "<div><h2>" + esc(r.name) + "</h2>" +
+      '<div class="muted">' + esc(r.pos || "") + (r.grade ? " · grade " + esc(r.grade) : "") + "</div>" +
+      (elite.length ? "<div class='muted'>Elite traits: <strong>" + elite.map(esc).join(", ") + "</strong></div>" : "") +
+      "</div></div>" +
+      '<div class="tgrid">' + cards + "</div>" +
+      '<div class="count muted">Draft-prospect style, computed — never official Champion Data ratings. ' +
+      "Elite = top 10% of Bulldogs in the same line (CD's own elite band); Above average ≥65th percentile, Average ≥35th, Below average ≥15th, Poor below that. " +
+      "Speed, endurance and leap need combine testing and are honestly left out.</div>";
+    Array.prototype.forEach.call(host.querySelectorAll("[data-rplayer]"), function (s) {
+      s.addEventListener("change", function () { state.rplayer = s.value; save(); renderRatings(host); });
+    });
+  }
+
   function renderTimeline() {
     $("content").innerHTML = '<ol class="timeline">' + DATA.timeline.map(function (t) {
       return '<li><span class="twhen">' + esc(t.when) + "</span>" +
@@ -713,6 +785,7 @@
       if (name === "compare") { renderCompare($("content")); return; }
       if (name === "advanced") { renderAdvanced($("content")); return; }
       if (name === "ranks") { renderRanks($("content")); return; }
+      if (name === "ratings") { renderRatings($("content")); return; }
       render();
     };
     try {
@@ -743,6 +816,14 @@
     $("modalClose").addEventListener("click", closeModal);
     $("modal").addEventListener("click", function (e) { if (e.target === $("modal")) closeModal(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeModal(); });
+    document.addEventListener("click", function (e) {
+      var t = e.target;
+      while (t && !t.getAttribute) t = t.parentNode;
+      var n = t && t.getAttribute ? t.getAttribute("data-ratings") : null;
+      if (!n) return;
+      state.rplayer = n; save(); closeModal();
+      try { location.hash = "#/ratings"; } catch (err) { /* no location */ }
+    });
 
     var foot = $("sources");
     foot.innerHTML = "Sources: " + DATA.meta.sources.map(function (s) {
@@ -755,10 +836,11 @@
   function renderGuide() {
     $("content").innerHTML =
       '<div class="guide"><h3>About this hub</h3>' +
-      "<p>Nine views, one URL. <strong>Squad</strong> is the sortable list with grade bands, line groups and career/2026 toggles. " +
+      "<p>Ten views, one URL. <strong>Squad</strong> is the sortable list with grade bands, line groups and career/2026 toggles. " +
       "<strong>Stats Leaders</strong> ranks the list across General, Ball winners, Defence and Fantasy families (min. 5 games). " +
       "<strong>Advanced Stats</strong> goes deeper — metres gained, score involvements, contested ball, clearances and more, all with AFL ranks. " +
       "<strong>League Ranks</strong> collects every top ranking held by a Bulldog in one board. " +
+      "<strong>Trait Ratings</strong> grades every player Elite-to-Poor across twelve statistical traits, draft-prospect style. " +
       "<strong>Players</strong> is the photo grid. <strong>Compare</strong> puts any two players side by side — numbers only, no verdicts. " +
       "<strong>Off-season Moves</strong> is the dated arrivals/departures ledger. <strong>Timeline</strong> tells the off-season story in order. " +
       "Every tab has a shareable address (e.g. <code>#/leaders</code>, <code>#/compare</code>).</p>" +

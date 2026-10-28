@@ -211,6 +211,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, th:focus-visibl
 .ptrack { flex: 1; height: 10px; border-radius: 5px; background: var(--wash); border: 1px solid var(--line); overflow: hidden; }
 .ptrack i { display: block; height: 100%; background: var(--green); }
 .pv { width: 40px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.tcard { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; border-top-width: 5px; }
+.tcard .thead { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.tier { display: inline-block; font-weight: 800; font-size: 14px; border-radius: 6px; padding: 2px 10px; margin-bottom: 8px; }
+.tier.t-elite { background: #0b1e3f; color: var(--gold); }
+.tier.t-above { background: #1c7a3d; color: #fff; }
+.tier.t-avg { background: var(--wash); color: var(--ink); border: 1px solid var(--line); }
+.tier.t-below { background: #fdf0d5; color: #7a5200; border: 1px solid #e3c878; }
+.tier.t-poor { background: #fbe4e5; color: var(--red-dark); border: 1px solid #efb3b8; }
+.tier.t-na { background: transparent; color: var(--muted); border: 1px dashed var(--line); }
+.tcard .ptrack { margin: 2px 0 6px; }
+.tval { font-size: 13px; font-variant-numeric: tabular-nums; }
 .mnote { font-size: 14.5px; line-height: 1.55; }
 
 body.dark { --paper: #101b33; --wash: #0a1327; --line: #26365a; --ink: #e9eef8; --muted: #93a3c2; --navy-2: #1b3260; }
