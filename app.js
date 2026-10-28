@@ -282,7 +282,7 @@
     wireCards(host);
   }
 
-  var ORDER = { "Sep 2026": 1, "Oct 2026": 2, "9 Oct 2026": 3, "Nov 2026": 4 };
+  var ORDER = { "Sep 2026": 1, "9 Oct 2026": 2, "Oct 2026": 3, "Nov 2026": 4 };
 
   function renderMoves(host, rows) {
     if (!state.mkind) state.mkind = "All";
@@ -301,7 +301,17 @@
       var cls = r.kind === "Arrival" ? "in" : (r.kind === "Retired" ? "ret" : "out");
       return "<span class='pill " + cls + "'>" + esc(r.kind || "–") + "</span>";
     };
+    var nArr = rows.filter(function (r) { return r._s === "in"; }).length;
+    var nFA = rows.filter(function (r) { return r._s === "in" && (r.via || "").indexOf("Free agent") === 0; }).length;
+    var nTr = rows.filter(function (r) { return r._s === "in" && (r.via || "").indexOf("Trade") === 0; }).length;
+    var nDel = rows.filter(function (r) { return r.move === "Delisted" || (r.move || "").indexOf("Delisted") === 0; }).length;
+    var nRet = rows.filter(function (r) { return r.move === "Retired"; }).length;
     host.innerHTML =
+      '<div class="leaders">' +
+      '<div class="lead"><div class="l">2026 list</div><div class="v">44 players</div><div class="s">Draftguru 2026 list</div></div>' +
+      '<div class="lead"><div class="l">Arrivals</div><div class="v">+' + nArr + '</div><div class="s">' + nFA + ' free agents, ' + nTr + ' trades</div></div>' +
+      '<div class="lead"><div class="l">Delisted</div><div class="v">−' + nDel + '</div><div class="s">incl. Garcia rookie re-draft</div></div>' +
+      '<div class="lead"><div class="l">Retired</div><div class="v">−' + nRet + '</div><div class="s">Liberatore, Treloar, Harmes</div></div></div>' +
       '<div class="gbands" role="group" aria-label="Filter moves by type">' +
       kinds.map(function (k) {
         var n = k === "All" ? rows.length : rows.filter(function (r) { return r.kind === k; }).length;
