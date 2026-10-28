@@ -28,6 +28,8 @@
       if (saved.lfam) state.lfam = saved.lfam;
       if (saved.lsort) state.lsort = saved.lsort;
       if (saved.ldir) state.ldir = saved.ldir;
+      if (saved.cmpA) state.cmpA = saved.cmpA;
+      if (saved.cmpB) state.cmpB = saved.cmpB;
       if (saved.sortKey) state.sortKey = saved.sortKey;
       if (saved.sortDir) state.sortDir = saved.sortDir;
     }
@@ -38,7 +40,7 @@
 
   function $(id) { return document.getElementById(id); }
 
-  var TABS = ["squad", "leaders", "players", "moves", "timeline", "about"];
+  var TABS = ["squad", "leaders", "players", "compare", "moves", "timeline", "about"];
   var FAMS = {
     general: { label: "General", cols: [["games", "Games", "Career games"], ["goals", "Goals", "Career goals"], ["g2026", "2026 G", "Games played in 2026"], ["avgD", "Avg Disp", "Disposals per game, 2026"], ["rankBest", "AFL Rank", "Best per-game league rank, 2026"]] },
     ball: { label: "Ball winners", cols: [["avgK", "Kicks", "Kicks per game, 2026"], ["avgHB", "Handballs", "Handballs per game, 2026"], ["avgD", "Disposals", "Disposals per game, 2026"], ["avgM", "Marks", "Marks per game, 2026"]] },
@@ -479,6 +481,62 @@
     });
   }
 
+  function squadList() {
+    return DATA.ins.map(function (p) { p._s = "in"; return p; })
+      .concat(DATA.retained.map(function (p) { p._s = "ret"; return p; }));
+  }
+
+  function renderCompare(host) {
+    var list = squadList();
+    if (!state.cmpA || !list.some(function (p) { return p.name === state.cmpA; })) state.cmpA = "Marcus Bontempelli";
+    if (!state.cmpB || !list.some(function (p) { return p.name === state.cmpB; })) state.cmpB = "Zak Butters";
+    var A = list.filter(function (p) { return p.name === state.cmpA; })[0];
+    var B = list.filter(function (p) { return p.name === state.cmpB; })[0];
+    var opts = function (sel, cur) {
+      return '<select data-cmp="' + sel + '">' + list.map(function (p) {
+        return '<option value="' + esc(p.name) + '"' + (p.name === cur ? " selected" : "") + ">" + esc(p.name) + "</option>";
+      }).join("") + "</select>";
+    };
+    var dash = function (v) { return (v === null || v === undefined || v === "") ? "–" : v; };
+    var num = function (v) { return (v === null || v === undefined) ? "–" : (Math.round(v * 10) / 10); };
+    var bars = [["avgD", "Disposals"], ["avgG", "Goals"], ["avgT", "Tackles"], ["avgAF", "Fantasy"]].map(function (s) {
+      var av = A[s[0]], bv = B[s[0]];
+      var max = Math.max(av || 0, bv || 0, 0.01);
+      var bar = function (v, cls) {
+        return '<span class="cbar"><i class="' + cls + '" style="width:' + Math.round((v || 0) / max * 100) + '%"></i></span>';
+      };
+      return '<div class="cmprow"><span>' + num(av) + "</span><span class='cplab'>" + s[1] + "</span><span>" + num(bv) + "</span></div>" +
+        '<div class="cmprow bars"><span>' + bar(av, "a") + "</span><span></span><span>" + bar(bv, "b") + "</span></div>";
+    }).join("");
+    var face = function (p) {
+      return (p.img ? "<img class='mface' src='" + p.img + "' alt='' onerror='this.remove()'>" : "") +
+        "<h2>" + esc(p.name) + "</h2><div>" + pill(p._s) + "</div>" +
+        '<div class="muted">' + esc(p.pos || "") + (p.grade ? " · " + esc(p.grade) : "") + "</div>";
+    };
+    var statRow = function (label, a, b) {
+      return "<tr><td>" + a + "</td><td class='clab'>" + label + "</td><td>" + b + "</td></tr>";
+    };
+    host.innerHTML =
+      '<div class="cmphead">' + opts("A", A.name) + '<span class="vs">vs</span>' + opts("B", B.name) + "</div>" +
+      '<div class="cmpgrid"><div>' + face(A) + "</div><div>" + face(B) + "</div></div>" +
+      '<div class="tscroll"><table class="cmptable"><tbody>' +
+      statRow("Career games", dash(A.games), dash(B.games)) +
+      statRow("Career goals", dash(A.goals), dash(B.goals)) +
+      statRow("2026 games", dash(A.g2026), dash(B.g2026)) +
+      statRow("Height", dash(A.ht), dash(B.ht)) +
+      statRow("Drafted", dash(A.drafted), dash(B.drafted)) +
+      statRow("AFL rank", A.rankBest ? "#" + A.rankBest + " " + esc(A.rankCat || "") : "–", B.rankBest ? "#" + B.rankBest + " " + esc(B.rankCat || "") : "–") +
+      "</tbody></table></div>" +
+      "<h3>2026 averages head-to-head</h3>" + bars +
+      '<div class="count muted">No verdicts — just numbers. Honours live on each profile.</div>';
+    Array.prototype.forEach.call(host.querySelectorAll("[data-cmp]"), function (s) {
+      s.addEventListener("change", function () {
+        state[s.getAttribute("data-cmp") === "A" ? "cmpA" : "cmpB"] = s.value;
+        save(); renderCompare(host);
+      });
+    });
+  }
+
   function renderTimeline() {
     $("content").innerHTML = '<ol class="timeline">' + DATA.timeline.map(function (t) {
       return '<li><span class="twhen">' + esc(t.when) + "</span>" +
@@ -542,6 +600,7 @@
       if (name === "about") { renderGuide(); return; }
       if (name === "timeline") { renderTimeline(); return; }
       if (name === "leaders") { renderLeaders($("content")); return; }
+      if (name === "compare") { renderCompare($("content")); return; }
       render();
     };
     try {
