@@ -176,7 +176,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, th:focus-visibl
 .cbar i.a { background: var(--navy-2); float: right; }
 .cbar i.b { background: var(--red); }
 .cmprow.bars { margin: 0 0 8px; }
-.movetitle { font-size: 18px; margin: 6px 0 12px; }
 .cta { display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--paper); border: 1px solid var(--line); border-top: 5px solid var(--red); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px; }
 .cta a { flex: none; background: var(--navy); color: #fff; font-weight: 700; border-radius: 8px; padding: 10px 18px; text-decoration: none; }
 .cta a:hover { background: var(--red-dark); }
@@ -253,10 +252,7 @@ tbody tr.ret-row td:first-child { border-left: 4px solid var(--navy-2); }
 .card h3 { display: flex; align-items: center; }
 .count { padding: 10px 2px; color: var(--muted); font-size: 13px; }
 
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; }
-.card h3 { margin: 0 0 4px; font-size: 16px; }
-.card .via { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.face.big { width: 44px; height: 44px; }
 
 footer { max-width: 1560px; padding: 0 28px 40px; color: var(--muted); font-size: 13px; }
 footer a { color: var(--navy); }

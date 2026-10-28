@@ -251,19 +251,8 @@
     });
   }
 
-  function cardHTML(r, i) {
-    var cls = r._s === "in" ? "in-row" : (r._s === "out" ? "out-row" : "ret-row");
-    var rec = (r.games !== undefined && r.games !== null) ? r.games + " games, " + r.goals + " goals" : "";
-    return '<div class="card ' + cls + '" data-i="' + i + '"><h3>' +
-      (r.img ? "<img class='face big' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "") +
-      esc(r.name) + "</h3>" +
-      '<div class="via">' + esc(r.via || r.move || "") + (rec ? " · " + rec : "") + "</div>" +
-      '<div class="muted">' + esc(r.note || r.detail || "") + "</div>" +
-      (r.honours ? '<div class="muted">Honours: ' + esc(r.honours) + "</div>" : "") + "</div>";
-  }
-
   function wireCards(host) {
-    Array.prototype.forEach.call(host.querySelectorAll(".card, .pcard"), function (c) {
+    Array.prototype.forEach.call(host.querySelectorAll(".pcard"), function (c) {
       c.addEventListener("click", function () { openModal(lastRows[+c.getAttribute("data-i")]); });
     });
   }
@@ -682,16 +671,25 @@
 
   function renderGuide() {
     $("content").innerHTML =
-      '<div class="guide"><h3>Keeping this tracker up to date</h3>' +
+      '<div class="guide"><h3>About this hub</h3>' +
+      "<p>Seven views, one URL. <strong>Squad</strong> is the sortable list with grade bands, line groups and career/2026 toggles. " +
+      "<strong>Stats Leaders</strong> ranks the list across General, Ball winners, Defence and Fantasy families (min. 5 games). " +
+      "<strong>Players</strong> is the photo grid. <strong>Compare</strong> puts any two players side by side — numbers only, no verdicts. " +
+      "<strong>Off-season Moves</strong> is the dated arrivals/departures ledger. <strong>Timeline</strong> tells the off-season story in order. " +
+      "Every tab has a shareable address (e.g. <code>#/leaders</code>, <code>#/compare</code>).</p>" +
+      "<h3>Where the numbers come from</h3>" +
+      "<p class='muted'>Grades, DOBs, heights, career totals and honours: Draftguru 2026 lists. " +
+      "2026 averages and best per-game league ranks: Footywire season data. " +
+      "Percentile bars compare each player against teammates in the same line (Defenders, Midfielders, Forwards, Rucks); " +
+      "players with no 2026 games show dashes rather than guesses. Contract years default to TBC until confirmed.</p>" +
+      "<h3>Keeping this tracker up to date</h3>" +
       "<ol>" +
-      "<li>Open <code>data/players.js</code> in any text editor.</li>" +
-      "<li>Add draftees to <code>retained</code>, e.g. <code>{ name: \"New Draftee\", pos: \"Mid\" }</code>.</li>" +
-      "<li>Move departures into <code>outs</code> with a <code>move</code> label.</li>" +
-      "<li>Fill in new draftees' <code>num</code>, <code>dob</code>, <code>ht</code> and <code>drafted</code> details as confirmed, then refresh this page.</li>" +
-      "<li>Commit and push — if connected to GitHub + Vercel, the live site updates itself:</li>" +
+      "<li>Player facts live in <code>data/players.js</code>; 2026 stats live in <code>data/stats2026.js</code>. Add draftees to <code>retained</code>, move departures to <code>outs</code> with a <code>date</code> and <code>kind</code>.</li>" +
+      "<li>Fill in <code>contract</code> (e.g. <code>\"2028\"</code>) and <code>avail</code> (e.g. <code>\"Injured\"</code>) as confirmed — both default sensibly when absent.</li>" +
+      "<li>Commit and push — the live site updates itself:</li>" +
       "</ol>" +
       "<pre>git add -A && git commit -m \"Update list\" && git push</pre>" +
-      "<p class='muted'>Send me your data tables any time and I will merge them into this file for you.</p></div>";
+      "<p class='muted'>Send data tables any time and they will be merged into these files.</p></div>";
   }
 
   document.addEventListener("DOMContentLoaded", init);
