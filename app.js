@@ -30,6 +30,7 @@
       if (saved.ldir) state.ldir = saved.ldir;
       if (saved.cmpA) state.cmpA = saved.cmpA;
       if (saved.cmpB) state.cmpB = saved.cmpB;
+      if (saved.advM) state.advM = saved.advM;
       if (saved.sortKey) state.sortKey = saved.sortKey;
       if (saved.sortDir) state.sortDir = saved.sortDir;
     }
@@ -40,7 +41,8 @@
 
   function $(id) { return document.getElementById(id); }
 
-  var TABS = ["squad", "leaders", "players", "compare", "moves", "timeline", "about"];
+  var TABS = ["squad", "leaders", "players", "compare", "advanced", "ranks", "moves", "timeline", "about"];
+  var ADV = window.ADV || { metrics: {}, ranks: {} };
   var FAMS = {
     general: { label: "General", cols: [["games", "Games", "Career games"], ["goals", "Goals", "Career goals"], ["g2026", "2026 G", "Games played in 2026"], ["avgD", "Avg Disp", "Disposals per game, 2026"], ["rankBest", "AFL Rank", "Best per-game league rank, 2026"]] },
     ball: { label: "Ball winners", cols: [["avgK", "Kicks", "Kicks per game, 2026"], ["avgHB", "Handballs", "Handballs per game, 2026"], ["avgD", "Disposals", "Disposals per game, 2026"], ["avgM", "Marks", "Marks per game, 2026"]] },
@@ -566,6 +568,66 @@
     });
   }
 
+  function byName(n) {
+    var all = DATA.ins.concat(DATA.retained, DATA.outs);
+    for (var i = 0; i < all.length; i++) if (all[i].name === n) return all[i];
+    return null;
+  }
+
+  function renderAdvanced(host) {
+    var codes = Object.keys(ADV.metrics);
+    if (!state.advM || !ADV.metrics[state.advM]) state.advM = codes[0];
+    var m = ADV.metrics[state.advM];
+    var list = Object.keys(m.rows).map(function (n) {
+      return { name: n, rank: m.rows[n].rank, avg: m.rows[n].avg };
+    }).sort(function (a, b) { return a.avg - b.avg; }).reverse();
+    lastRows = list.map(function (e) { return byName(e.name); }).filter(Boolean);
+    host.innerHTML =
+      '<div class="gbands" role="group" aria-label="Advanced metrics">' +
+      codes.map(function (c) {
+        return '<button class="gbtn" data-adv="' + c + '" aria-pressed="' + (state.advM === c) + '">' + esc(ADV.metrics[c].label) + "</button>";
+      }).join("") + "</div>" +
+      '<div class="tscroll"><table><thead><tr><th>#</th><th>Player</th><th>' +
+      esc(m.label) + " avg</th><th>AFL rank</th></tr></thead><tbody>" +
+      list.map(function (e) {
+        var r = byName(e.name);
+        var face = r && r.img ? "<img class='face' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
+        return "<tr data-n='" + esc(e.name) + "'><td>" + (list.indexOf(e) + 1) + "</td>" +
+          "<td><span class='who'>" + face + "<strong>" + esc(e.name) + "</strong></span></td>" +
+          "<td>" + e.avg + (m.unit ? " " + esc(m.unit) : "") + "</td>" +
+          "<td><span class='rank'>#" + e.rank + "</span></td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      '<div class="count muted">' + list.length + " Bulldogs ranked. Per-game 2026 leaderboards via Footywire; only ranked players appear — the rest were outside the cut.</div>";
+    Array.prototype.forEach.call(host.querySelectorAll("[data-adv]"), function (b) {
+      b.addEventListener("click", function () { state.advM = b.getAttribute("data-adv"); save(); renderAdvanced(host); });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("tbody tr"), function (tr) {
+      tr.addEventListener("click", function () {
+        var r = byName(tr.getAttribute("data-n"));
+        if (r) openModal(r);
+      });
+    });
+  }
+
+  function renderRanks(host) {
+    var all = [];
+    Object.keys(ADV.ranks).forEach(function (n) {
+      ADV.ranks[n].forEach(function (e) { all.push({ name: n, rank: e.rank, cat: e.cat }); });
+    });
+    all.sort(function (a, b) { return a.rank - b.rank || String(a.name).localeCompare(String(b.name)); });
+    lastRows = all.map(function (e) { return byName(e.name); }).filter(Boolean);
+    host.innerHTML =
+      '<div class="tscroll"><table><thead><tr><th>AFL rank</th><th>Player</th><th>Category</th></tr></thead><tbody>' +
+      all.map(function (e, i) {
+        return "<tr data-i='" + i + "'><td><span class='rank'>#" + e.rank + "</span></td>" +
+          "<td><strong>" + esc(e.name) + "</strong></td><td>" + esc(e.cat) + " per game</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      '<div class="count muted">' + all.length + " top-ranking entries held by Bulldogs in 2026, best first. Per-game leaderboards via Footywire. Click a row for the profile.</div>";
+    Array.prototype.forEach.call(host.querySelectorAll("tbody tr"), function (tr) {
+      tr.addEventListener("click", function () { openModal(lastRows[+tr.getAttribute("data-i")]); });
+    });
+  }
+
   function renderTimeline() {
     $("content").innerHTML = '<ol class="timeline">' + DATA.timeline.map(function (t) {
       return '<li><span class="twhen">' + esc(t.when) + "</span>" +
@@ -630,6 +692,8 @@
       if (name === "timeline") { renderTimeline(); return; }
       if (name === "leaders") { renderLeaders($("content")); return; }
       if (name === "compare") { renderCompare($("content")); return; }
+      if (name === "advanced") { renderAdvanced($("content")); return; }
+      if (name === "ranks") { renderRanks($("content")); return; }
       render();
     };
     try {
@@ -672,8 +736,10 @@
   function renderGuide() {
     $("content").innerHTML =
       '<div class="guide"><h3>About this hub</h3>' +
-      "<p>Seven views, one URL. <strong>Squad</strong> is the sortable list with grade bands, line groups and career/2026 toggles. " +
+      "<p>Nine views, one URL. <strong>Squad</strong> is the sortable list with grade bands, line groups and career/2026 toggles. " +
       "<strong>Stats Leaders</strong> ranks the list across General, Ball winners, Defence and Fantasy families (min. 5 games). " +
+      "<strong>Advanced Stats</strong> goes deeper — metres gained, score involvements, contested ball, clearances and more, all with AFL ranks. " +
+      "<strong>League Ranks</strong> collects every top ranking held by a Bulldog in one board. " +
       "<strong>Players</strong> is the photo grid. <strong>Compare</strong> puts any two players side by side — numbers only, no verdicts. " +
       "<strong>Off-season Moves</strong> is the dated arrivals/departures ledger. <strong>Timeline</strong> tells the off-season story in order. " +
       "Every tab has a shareable address (e.g. <code>#/leaders</code>, <code>#/compare</code>).</p>" +
