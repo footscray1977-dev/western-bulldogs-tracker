@@ -108,7 +108,9 @@ body {
 main { max-width: 1560px; padding: 14px 28px 40px; }
 table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-size: 14px; }
 th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
-th { background: var(--navy-2); color: #fff; font-size: 12.5px; cursor: pointer; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+th { background: var(--navy-2); color: #fff; font-size: 13px; font-weight: 800; letter-spacing: 0.3px; cursor: pointer; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+td { font-weight: 600; }
+td .muted, .muted { font-weight: 400; }
 tbody tr { cursor: pointer; }
 .gcell { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
 .gbar { width: 64px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; flex: none; }
