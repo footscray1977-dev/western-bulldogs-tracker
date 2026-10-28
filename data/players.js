@@ -6,6 +6,10 @@
 // • To move a player out: move their object into outs with a `move` note.
 // • Stat fields: num, grade, dob, ht, games/goals (career), g2026/gl2026,
 //   drafted, honours, img (official headshot URL).
+// • Recruit photos are local files in images/ (Butters, Butts, O'Keeffe from
+//   club media; Maginness is an edited mock-up — his 2026 Hawks headshot with
+//   a Bulldogs guernsey — until the official 2027 headshots are published,
+//   then paste the new AFL headshot URLs back in.
 // • After editing, commit + push; Vercel redeploys automatically.
 // Sources: AFL.com.au ins-and-outs (Oct 2026); Draftguru 2026 lists;
 // westernbulldogs.com.au + portadelaidefc.com.au player pages (photos via
@@ -30,10 +34,10 @@ window.BULLDOGS_DATA = {
 
   // ---- IN: 2026 trade / free-agency period --------------------------------
   ins: [
-    { name: "Zak Butters", date: "9 Oct 2026", kind: "Arrival", via: "Free agent — Port Adelaide", pos: "Mid/Fwd", grade: "A+", dob: "8 Sep 00", ht: "181cm", games: 156, goals: 73, g2026: 17, gl2026: 5, drafted: "#12 National 2018", honours: "AA: 2023, 2024, 2026; AFLCA: 2023; AFLPA Most Courageous: 2023, 2024; B&F: 2023, 2024, 2025; Port vice-captain 2024-26", img: "https://s.afl.com.au/staticfile/AFL%20Tenant/AFL/Players/ChampIDImages/AFL/2026014/1006121.png?im=Scale,width=200,height=200", note: "Headline recruit; restricted free agent, Port declined to match (Band-1 compensation). Reported ~9-year deal. Wore No.9 at Port, new number TBC." },
-    { name: "Jordon Butts", date: "Oct 2026", kind: "Arrival", via: "Free agent — Adelaide", pos: "Def", grade: "C+", dob: "31 Dec 99", ht: "195cm", games: 94, goals: 1, g2026: 9, gl2026: 1, drafted: "#39 Rookie 2018", honours: "", img: "https://s.afl.com.au/staticfile/AFL%20Tenant/AFL/Players/ChampIDImages/AFL/2026014/1004995.png?im=Scale,width=200,height=200", note: "Key defender; unrestricted free agent on a reported 5-year deal (Band-3 compensation)." },
-    { name: "Finn Maginness", date: "9 Oct 2026", kind: "Arrival", via: "Trade — Hawthorn", pos: "Mid/Fwd", grade: "B", dob: "23 Feb 01", ht: "187cm", games: 64, goals: 16, g2026: 6, gl2026: 2, drafted: "#29 National 2019", honours: "", img: "https://s.afl.com.au/staticfile/AFL%20Tenant/AFL/Players/ChampIDImages/AFL/2026014/1009421.png?im=Scale,width=200,height=200", note: "Inside mid / tagger. Pick-swap deal, 9 Oct." },
-    { name: "Hudson O'Keeffe", date: "Oct 2026", kind: "Arrival", via: "Trade — Carlton", pos: "Ruck", grade: "C", dob: "16 Dec 04", ht: "202cm", games: 8, goals: 3, g2026: 3, gl2026: 0, drafted: "SSP 2022", honours: "", img: "https://s.afl.com.au/staticfile/AFL%20Tenant/AFL/Players/ChampIDImages/AFL/2026014/1023489.png?im=Scale,width=200,height=200", note: "Developing ruck." },
+    { name: "Zak Butters", date: "9 Oct 2026", kind: "Arrival", via: "Free agent — Port Adelaide (five-club mega deal)", pos: "Mid/Fwd", grade: "A+", dob: "8 Sep 00", ht: "181cm", games: 156, goals: 73, g2026: 17, gl2026: 5, drafted: "#12 National 2018", honours: "AA: 2023, 2024, 2026; AFLCA: 2023; AFLPA Most Courageous: 2023, 2024; B&F: 2023, 2024, 2025; Port vice-captain 2024-26", img: "images/butters.jpg", note: "Headline recruit via five-club mega deal; restricted free agent, Port declined to match (Band-1 compensation). Reported ~9-year deal. Unveiled at Whitten Oval 11 Oct; wore No.9 at Port, new number TBC." },
+    { name: "Jordon Butts", date: "Oct 2026", kind: "Arrival", via: "Free agent — Adelaide", pos: "Def", grade: "C+", dob: "31 Dec 99", ht: "195cm", games: 94, goals: 1, g2026: 9, gl2026: 1, drafted: "#39 Rookie 2018", honours: "", img: "images/butts.jpg", note: "Key defender; unrestricted free agent on a reported 5-year deal (Band-3 compensation)." },
+    { name: "Finn Maginness", date: "9 Oct 2026", kind: "Arrival", via: "Trade — Hawthorn (five-club mega deal)", pos: "Mid/Fwd", grade: "B", dob: "23 Feb 01", ht: "187cm", games: 64, goals: 16, g2026: 6, gl2026: 2, drafted: "#29 National 2019", honours: "", img: "images/maginness.jpg", note: "Inside mid / tagger. Pick-swap deal, 9 Oct." },
+    { name: "Hudson O'Keeffe", date: "Oct 2026", kind: "Arrival", via: "Trade — Carlton (five-club mega deal)", pos: "Ruck", grade: "C", dob: "16 Dec 04", ht: "202cm", games: 8, goals: 3, g2026: 3, gl2026: 0, drafted: "SSP 2022", honours: "", img: "images/okeeffe.jpg", note: "Developing ruck." },
   ],
 
   // ---- RETAINED: Draftguru 2026-list snapshot -------------------------------
@@ -79,9 +83,10 @@ window.BULLDOGS_DATA = {
     { when: "6–13 Oct 2026", what: "Trade Period", detail: "Finn Maginness (Hawthorn) and Hudson O'Keeffe (Carlton) traded in via pick swaps; Jordon Butts arrives as a free agent." },
     { when: "9 Oct 2026", what: "Zak Butters signs", detail: "Three-time All-Australian leaves Port Adelaide as a free agent; unveiled at Whitten Oval on 11 Oct." },
     { when: "Mid Oct 2026", what: "Second delisting wave", detail: "Nick Coffield, Ryan Gardner and Lachie McNeil delisted after the trade intake." },
+    { when: "Deadline day, Oct 2026", what: "Pick swap with Brisbane", detail: "Picks 42 + 53 in for a 2027 future second-rounder — draft hand rebuilt to match a bid on NGA forward Khaled El Souki. Picks held for November: 42, 53, 55, 83, 89, 91, 109." },
     { when: "Late Oct 2026", what: "Garcia rookie lifeline", detail: "Riley Garcia delisted with a club commitment to re-select him in the Rookie Draft." },
     { when: "Oct 2026", what: "Retirements", detail: "Tom Liberatore, Adam Treloar and James Harmes call time." },
-    { when: "Nov 2026", what: "Drafts", detail: "National + Rookie Drafts (incl. Garcia re-draft) — add selections to retained above." }
+    { when: "Nov 2026", what: "Drafts", detail: "National + Rookie Drafts (incl. Garcia re-draft; bid expected on NGA forward Khaled El Souki) — add selections to retained above." }
   ],
 
   // ---- OUT: delistings, retirements ----------------------------------------

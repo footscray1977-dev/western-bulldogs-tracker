@@ -16,19 +16,17 @@
   var lastRows = [];
 
   try {
-    var saved = JSON.parse(localStorage.getItem("wb27") || "null");
+    var saved = JSON.parse(localStorage.getItem("wb28") || "null");
     if (saved) {
       if (saved.tab) state.tab = saved.tab;
       if (saved.q) state.q = saved.q;
       if (saved.pos) state.pos = saved.pos;
       if (saved.gradeBand) state.gradeBand = saved.gradeBand;
       if (saved.view) state.view = saved.view;
-      if (saved.minG !== undefined) state.minG = saved.minG;
       if (saved.grouped !== undefined) state.grouped = saved.grouped;
       if (saved.lfam) state.lfam = saved.lfam;
       if (saved.lsort) state.lsort = saved.lsort;
       if (saved.ldir) state.ldir = saved.ldir;
-      if (saved.lmin !== undefined) state.lmin = saved.lmin;
       if (saved.cmpA) state.cmpA = saved.cmpA;
       if (saved.cmpB) state.cmpB = saved.cmpB;
       if (saved.advM) state.advM = saved.advM;
@@ -38,12 +36,12 @@
     }
   } catch (e) { /* private mode */ }
   function save() {
-    try { localStorage.setItem("wb27", JSON.stringify(state)); } catch (e) { /* private mode */ }
+    try { localStorage.setItem("wb28", JSON.stringify(state)); } catch (e) { /* private mode */ }
   }
 
   function $(id) { return document.getElementById(id); }
 
-  var TABS = ["squad", "leaders", "players", "compare", "advanced", "ranks", "ratings", "moves", "timeline", "about"];
+  var TABS = ["squad", "leaders", "players", "compare", "advanced", "ranks", "ratings", "moves", "timeline"];
   var TRAITS = [
     ["avgD", "Engine (disposals)"], ["avgK", "Kicking volume"], ["avgHB", "Handball game"],
     ["avgM", "Marking"], ["avgT", "Tackling"], ["avgG", "Scoreboard (goals)"],
@@ -97,6 +95,16 @@
     return '<span class="pill ret">RETAINED</span>';
   }
 
+  function initials(n) {
+    return String(n || "?").split(" ").map(function (w) { return w.charAt(0); }).join("").slice(0, 2).toUpperCase();
+  }
+
+  function faceHTML(r, cls) {
+    cls = cls || "face";
+    if (r && r.img) return "<img class='" + cls + "' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>";
+    return "<span class='" + cls + " fb' aria-hidden='true'>" + esc(initials(r && r.name)) + "</span>";
+  }
+
   function bandOf(r) { return r.grade ? r.grade.charAt(0) : "–"; }
 
   function lineOf(r) {
@@ -118,8 +126,6 @@
     };
     return '<div class="gbands" role="group" aria-label="Squad view options">' +
       seg("view", [["career", "Career totals"], ["season", "2026 figures"]]) +
-      '<span class="tsep"></span>' +
-      seg("minG", [[0, "Any games"], [5, "5+ games"], [10, "10+ games"]]) +
       '<span class="tsep"></span>' +
       '<button class="gbtn" data-k="grouped" data-v="toggle" aria-pressed="' + (state.grouped === true) + '">Group by line</button>' +
       "</div>";
@@ -145,7 +151,6 @@
     renderPosFilter();
     if (!state.gradeBand) state.gradeBand = "All";
     if (!state.view) state.view = "career";
-    if (state.minG === undefined) state.minG = 0;
     if (state.grouped === undefined) state.grouped = false;
     var season = state.view === "season";
     var rows = rowsForTab().filter(function (r) {
@@ -153,8 +158,7 @@
       var hitQ = !q || r.name.toLowerCase().indexOf(q) > -1;
       var hitP = state.pos === "All" || (r.pos || "").split("/").indexOf(state.pos) > -1;
       var hitB = state.gradeBand === "All" || bandOf(r) === state.gradeBand;
-      var hitM = (r.g2026 || 0) >= state.minG;
-      return hitQ && hitP && hitB && hitM;
+      return hitQ && hitP && hitB;
     });
     rows.sort(function (a, b) {
       var k = state.sortKey;
@@ -192,7 +196,7 @@
     var rowHTML = function (r, i) {
       var cls = r._s === "in" ? "in-row" : "ret-row";
       var tip = esc(r.honours || r.via || r.note || "");
-      var face = r.img ? "<img class='face' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
+      var face = faceHTML(r);
       var gv = season ? r.g2026 : r.games;
       var gl = season ? r.gl2026 : r.goals;
       var pct = gv ? Math.max(3, Math.round(gv / maxGames * 100)) : 0;
@@ -273,7 +277,7 @@
       var sub = (r.avgD ? r.avgD.toFixed(1) + " avg" : (r.games + " games")) +
         (r.rankBest ? " · #" + r.rankBest + " " + esc(r.rankCat || "") : "");
       return '<div class="pcard" data-i="' + i + '">' +
-        (r.img ? "<img src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "") +
+        faceHTML(r) +
         "<div class='pname'>" + esc(r.name) + "</div>" +
         "<div class='pmeta'>" + pill(r._s) + " <span class='muted'>" + esc(r.pos || "") + "</span></div>" +
         "<div class='pstat'>" + sub + "</div></div>";
@@ -450,7 +454,7 @@
     }).join("");
     $("modalBody").innerHTML =
       '<div class="mhead">' +
-      (r.img ? "<img class='mface' src='" + r.img + "' alt='' onerror='this.remove()'>" : "") +
+      faceHTML(r, "mface") +
       "<div><h2>" + esc(r.name) + "</h2>" +
       '<div class="muted">' + esc(r.via || r.move || "") + (r.role ? " · " + esc(r.role) : "") + "</div>" +
       "<div>" + pill(r._s) + "</div></div></div>" +
@@ -473,11 +477,9 @@
   function renderLeaders(host) {
     if (!state.lfam || !FAMS[state.lfam]) state.lfam = "general";
     if (!state.lsort) { state.lsort = "avgD"; state.ldir = -1; }
-    if (state.lmin === undefined) state.lmin = 0;
     var fam = FAMS[state.lfam];
     var pool = DATA.ins.map(function (p) { p._s = "in"; return p; })
-      .concat(DATA.retained.map(function (p) { p._s = "ret"; return p; }))
-      .filter(function (r) { return (r.g2026 || 0) >= state.lmin; });
+      .concat(DATA.retained.map(function (p) { p._s = "ret"; return p; }));
     pool.sort(function (a, b) {
       var k = state.lsort, av = a[k], bv = b[k];
       if (av === null || av === undefined) return 1;
@@ -496,10 +498,7 @@
     var html = '<div class="gbands" role="group" aria-label="Stat families">' +
       Object.keys(FAMS).map(function (f) {
         return '<button class="gbtn" data-lfam="' + f + '" aria-pressed="' + (state.lfam === f) + '">' + FAMS[f].label + "</button>";
-      }).join("") +
-      '<span class="tsep"></span>' +
-      '<button class="gbtn" data-lmin="0" aria-pressed="' + (state.lmin === 0) + '">All players</button>' +
-      '<button class="gbtn" data-lmin="5" aria-pressed="' + (state.lmin === 5) + '">5+ games</button></div>' +
+      }).join("") + "</div>" +
       '<div class="tscroll"><table><thead><tr><th>#</th><th>Player</th>' +
       fam.cols.map(function (c) {
         var a = state.lsort === c[0] ? ' <span class="arrow">' + (state.ldir === 1 ? "▲" : "▼") + "</span>" : "";
@@ -507,24 +506,18 @@
         return '<th data-lk="' + c[0] + '" aria-sort="' + sel + '" title="' + esc(c[2]) + '">' + esc(c[1]) + a + "</th>";
       }).join("") + "</tr></thead><tbody>" +
       pool.map(function (r, i) {
-        var face = r.img ? "<img class='face' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
+        var face = faceHTML(r);
         return "<tr data-i='" + i + "'><td>" + (i + 1) + "</td><td><span class='who'>" + face +
           "<strong>" + esc(r.name) + "</strong></span></td>" +
           fam.cols.map(function (c) { return "<td>" + cell(r, c[0]) + "</td>"; }).join("") + "</tr>";
       }).join("") + "</tbody></table></div>" +
-      '<div class="count muted">' + (state.lmin ? "Minimum 5 games in 2026. " : "All 37 on the list, including debutants yet to record an average. ") + 'Averages via Footywire; ranks are best per-game league ranks. Hover a header for the definition.</div>';
+      '<div class="count muted">All ' + pool.length + ' on the list, including players yet to record a 2026 average — they sort last with dashes. ' + 'Averages via Footywire; ranks are best per-game league ranks. Hover a header for the definition.</div>';
     host.innerHTML = html;
     Array.prototype.forEach.call(host.querySelectorAll("[data-lfam]"), function (b) {
       b.addEventListener("click", function () {
         state.lfam = b.getAttribute("data-lfam");
         var first = FAMS[state.lfam].cols[0][0];
         state.lsort = first; state.ldir = -1;
-        save(); renderLeaders(host);
-      });
-    });
-    Array.prototype.forEach.call(host.querySelectorAll("[data-lmin]"), function (b) {
-      b.addEventListener("click", function () {
-        state.lmin = +b.getAttribute("data-lmin");
         save(); renderLeaders(host);
       });
     });
@@ -544,6 +537,15 @@
   function squadList() {
     return DATA.ins.map(function (p) { p._s = "in"; return p; })
       .concat(DATA.retained.map(function (p) { p._s = "ret"; return p; }));
+  }
+
+  var SQUAD_NAMES = null;
+  function isCurrent(n) {
+    if (!SQUAD_NAMES) {
+      SQUAD_NAMES = {};
+      squadList().forEach(function (p) { SQUAD_NAMES[p.name] = true; });
+    }
+    return !!SQUAD_NAMES[n];
   }
 
   function renderCompare(host) {
@@ -569,7 +571,7 @@
         '<div class="cmprow bars"><span>' + bar(av, "a") + "</span><span></span><span>" + bar(bv, "b") + "</span></div>";
     }).join("");
     var face = function (p) {
-      return (p.img ? "<img class='mface' src='" + p.img + "' alt='' onerror='this.remove()'>" : "") +
+      return faceHTML(p, "mface") +
         "<h2>" + esc(p.name) + "</h2><div>" + pill(p._s) + "</div>" +
         '<div class="muted">' + esc(p.pos || "") + (p.grade ? " · " + esc(p.grade) : "") + "</div>";
     };
@@ -607,7 +609,7 @@
     var codes = Object.keys(ADV.metrics);
     if (!state.advM || !ADV.metrics[state.advM]) state.advM = codes[0];
     var m = ADV.metrics[state.advM];
-    var list = Object.keys(m.rows).map(function (n) {
+    var list = Object.keys(m.rows).filter(isCurrent).map(function (n) {
       return { name: n, rank: m.rows[n].rank || null, avg: ("avg" in m.rows[n]) ? m.rows[n].avg : null,
                rankTot: m.rows[n].rankTot || null, cut: !!m.rows[n].rank };
     }).sort(function (a, b) { return (a.avg || -1) - (b.avg || -1); }).reverse();
@@ -624,14 +626,14 @@
       esc(m.label) + " avg</th><th>AFL rank</th></tr></thead><tbody>" +
       list.map(function (e) {
         var r = byName(e.name);
-        var face = r && r.img ? "<img class='face' src='" + r.img + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
+        var face = faceHTML(r);
         return "<tr data-n='" + esc(e.name) + "'><td>" + (list.indexOf(e) + 1) + "</td>" +
           "<td><span class='who'>" + face + "<strong>" + esc(e.name) + "</strong></span></td>" +
           "<td>" + (e.avg !== null && e.avg !== undefined ? e.avg + (m.unit ? " " + esc(m.unit) : "") : "–") + "</td>" +
           "<td>" + (e.cut ? "<span class='rank'>#" + e.rank + "</span>"
             : (e.rankTot ? "<span class='muted'>#" + e.rankTot + " totals</span>" : "<span class='muted'>outside cut</span>")) + "</td></tr>";
       }).join("") + "</tbody></table></div>" +
-      '<div class="count muted">All 37 on the list. Gold badges are per-game league ranks; grey ranks are season-totals ranks (averages shown are per-game). Unranked players finished outside the published cuts or did not play.</div>';
+      '<div class="count muted">All ' + list.length + ' on the 2027 list — departed players excluded. Gold badges are per-game league ranks; grey ranks are season-totals ranks (averages shown are per-game). Unranked players finished outside the published cuts or did not play.</div>';
     Array.prototype.forEach.call(host.querySelectorAll("[data-adv]"), function (b) {
       b.addEventListener("click", function () { state.advM = b.getAttribute("data-adv"); save(); renderAdvanced(host); });
     });
@@ -646,6 +648,7 @@
   function renderRanks(host) {
     var all = [];
     Object.keys(ADV.ranks).forEach(function (n) {
+      if (!isCurrent(n)) return;
       ADV.ranks[n].forEach(function (e) { all.push({ name: n, rank: e.rank, cat: e.cat }); });
     });
     all.sort(function (a, b) { return a.rank - b.rank || String(a.name).localeCompare(String(b.name)); });
@@ -654,14 +657,22 @@
     all.forEach(function (e) { ranked[e.name] = true; });
     var rest = squadList().filter(function (p) { return !ranked[p.name]; })
       .map(function (p) { return p.name; }).sort();
+    var unranked = rest.map(function (n) { return byName(n); }).filter(Boolean);
+    lastRows = lastRows.concat(unranked);
     host.innerHTML =
-      '<div class="tscroll"><table><thead><tr><th>AFL rank</th><th>Player</th><th>Category</th></tr></thead><tbody>' +
+      '<div class="tscroll"><table><thead><tr><th>#</th><th>AFL rank</th><th>Player</th><th>Category</th></tr></thead><tbody>' +
       all.map(function (e, i) {
-        return "<tr data-i='" + i + "'><td><span class='rank'>#" + e.rank + "</span></td>" +
+        return "<tr data-i='" + i + "'><td>" + (i + 1) + "</td><td><span class='rank'>#" + e.rank + "</span></td>" +
           "<td><strong>" + esc(e.name) + "</strong></td><td>" + esc(e.cat) + " per game</td></tr>";
+      }).join("") +
+      unranked.map(function (r, j) {
+        var face = faceHTML(r);
+        return "<tr data-i='" + (all.length + j) + "'><td>" + (all.length + j + 1) + "</td><td>–</td>" +
+          "<td><span class='who'>" + face + "<strong>" + esc(r.name) + "</strong></span></td>" +
+          "<td class='muted'>Unranked · outside cuts or yet to debut</td></tr>";
       }).join("") + "</tbody></table></div>" +
-      '<div class="count muted">' + all.length + " top-ranking entries held by Bulldogs in 2026, best first. Per-game leaderboards via Footywire. Click a row for the profile.</div>" +
-      "<p class='muted'>Also on the list — outside the ranked cuts: " + rest.map(esc).join(", ") + ".</p>";
+      '<div class="count muted">' + all.length + " top-ranking entries held by Bulldogs in 2026, best first, then all " +
+      unranked.length + " remaining list players with no ranked cut. Per-game leaderboards via Footywire. Click a row for the profile.</div>";
     Array.prototype.forEach.call(host.querySelectorAll("tbody tr"), function (tr) {
       tr.addEventListener("click", function () { openModal(lastRows[+tr.getAttribute("data-i")]); });
     });
@@ -717,7 +728,7 @@
         return '<option value="' + esc(p.name) + '"' + (p.name === r.name ? " selected" : "") + ">" + esc(p.name) + "</option>";
       }).join("") + "</select></div>" +
       '<div class="mhead">' +
-      (r.img ? "<img class='mface' src='" + r.img + "' alt='' onerror='this.remove()'>" : "") +
+      faceHTML(r, "mface") +
       "<div><h2>" + esc(r.name) + "</h2>" +
       '<div class="muted">' + esc(r.pos || "") + (r.grade ? " · grade " + esc(r.grade) : "") + "</div>" +
       (elite.length ? "<div class='muted'>Elite traits: <strong>" + elite.map(esc).join(", ") + "</strong></div>" : "") +
@@ -725,9 +736,16 @@
       '<div class="tgrid">' + cards + "</div>" +
       '<div class="count muted">Draft-prospect style, computed — never official Champion Data ratings. ' +
       "Elite = top 10% of Bulldogs in the same line (CD's own elite band); Above average ≥65th percentile, Average ≥35th, Below average ≥15th, Poor below that. " +
-      "Speed, endurance and leap need combine testing and are honestly left out.</div>";
+      "Speed, endurance and leap need combine testing and are honestly left out.</div>" +
+      "<h3>All " + list.length + " players</h3>" +
+      '<div class="pindex">' + list.map(function (p) {
+        return "<button class='pidx" + (p.name === r.name ? " on" : "") + "' data-rp='" + esc(p.name) + "'>" + esc(p.name) + "</button>";
+      }).join("") + "</div>";
     Array.prototype.forEach.call(host.querySelectorAll("[data-rplayer]"), function (s) {
       s.addEventListener("change", function () { state.rplayer = s.value; save(); renderRatings(host); });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("[data-rp]"), function (b) {
+      b.addEventListener("click", function () { state.rplayer = b.getAttribute("data-rp"); save(); renderRatings(host); });
     });
   }
 
@@ -783,7 +801,7 @@
       var posOn = (name === "squad");
       $("search").style.display = searchOn ? "" : "none";
       $("posFilter").style.display = posOn ? "" : "none";
-      $("exportBtn").style.display = (name === "about" || name === "timeline") ? "none" : "";
+      $("exportBtn").style.display = (name === "timeline") ? "none" : "";
       save();
       if (!fromHash) {
         try {
@@ -791,7 +809,6 @@
           location.hash = "#/" + name;
         } catch (e) { /* no location */ }
       }
-      if (name === "about") { renderGuide(); return; }
       if (name === "timeline") { renderTimeline(); return; }
       if (name === "leaders") { renderLeaders($("content")); return; }
       if (name === "compare") { renderCompare($("content")); return; }
@@ -843,32 +860,6 @@
     }).join(" · ");
     var start = parseHash() || (TABS.indexOf(state.tab) > -1 ? state.tab : "squad");
     showTab(start, true);
-  }
-
-  function renderGuide() {
-    $("content").innerHTML =
-      '<div class="guide"><h3>About this hub</h3>' +
-      "<p>Ten views, one URL. <strong>Squad</strong> is the sortable list with grade bands, line groups and career/2026 toggles. " +
-      "<strong>Stats Leaders</strong> ranks the list across General, Ball winners, Defence and Fantasy families (min. 5 games). " +
-      "<strong>Advanced Stats</strong> goes deeper — metres gained, score involvements, contested ball, clearances and more, all with AFL ranks. " +
-      "<strong>League Ranks</strong> collects every top ranking held by a Bulldog in one board. " +
-      "<strong>Trait Ratings</strong> grades every player Elite-to-Poor across twelve statistical traits, draft-prospect style. " +
-      "<strong>Players</strong> is the photo grid. <strong>Compare</strong> puts any two players side by side — numbers only, no verdicts. " +
-      "<strong>Off-season Moves</strong> is the dated arrivals/departures ledger. <strong>Timeline</strong> tells the off-season story in order. " +
-      "Every tab has a shareable address (e.g. <code>#/leaders</code>, <code>#/compare</code>).</p>" +
-      "<h3>Where the numbers come from</h3>" +
-      "<p class='muted'>Grades, DOBs, heights, career totals and honours: Draftguru 2026 lists. " +
-      "2026 averages and best per-game league ranks: Footywire season data. " +
-      "Percentile bars compare each player against teammates in the same line (Defenders, Midfielders, Forwards, Rucks); " +
-      "players with no 2026 games show dashes rather than guesses. Contract years default to TBC until confirmed.</p>" +
-      "<h3>Keeping this tracker up to date</h3>" +
-      "<ol>" +
-      "<li>Player facts live in <code>data/players.js</code>; 2026 stats live in <code>data/stats2026.js</code>. Add draftees to <code>retained</code>, move departures to <code>outs</code> with a <code>date</code> and <code>kind</code>.</li>" +
-      "<li>Fill in <code>contract</code> (e.g. <code>\"2028\"</code>) and <code>avail</code> (e.g. <code>\"Injured\"</code>) as confirmed — both default sensibly when absent.</li>" +
-      "<li>Commit and push — the live site updates itself:</li>" +
-      "</ol>" +
-      "<pre>git add -A && git commit -m \"Update list\" && git push</pre>" +
-      "<p class='muted'>Send data tables any time and they will be merged into these files.</p></div>";
   }
 
   document.addEventListener("DOMContentLoaded", init);

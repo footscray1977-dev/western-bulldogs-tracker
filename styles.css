@@ -151,6 +151,13 @@ body.dark .rank { background: #3a2f10; color: #f2cd6e; border-color: #6e5620; }
 .gbtn[aria-pressed="true"] { border-color: var(--navy); background: var(--navy); color: #fff; }
 .gbtn[aria-pressed="true"] small { color: #c6d0e4; }
 button:focus-visible, input:focus-visible, select:focus-visible, th:focus-visible { outline: 3px solid var(--red); outline-offset: 1px; }
+.pindex { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.pidx { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.pidx:hover { border-color: var(--navy-2); }
+.pidx.on { border-color: var(--navy); background: var(--navy); color: #fff; }
+.face.fb { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .02em; border: 2px solid var(--red); vertical-align: middle; }
+.pcard .face.fb { width: 96px; height: 96px; font-size: 28px; }
+.mface.fb { display: inline-flex; align-items: center; justify-content: center; width: 84px; height: 84px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 26px; font-weight: 800; border: 3px solid var(--red); }
 
 .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; }
 .pcard { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 12px; text-align: center; cursor: pointer; }
@@ -268,9 +275,6 @@ tbody tr.ret-row td:first-child { border-left: 4px solid var(--navy-2); }
 
 footer { max-width: 1560px; padding: 0 28px 40px; color: var(--muted); font-size: 13px; }
 footer a { color: var(--navy); }
-.guide { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
-.guide code { background: var(--wash); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-size: 13px; }
-.guide pre { background: var(--navy); color: #e8edf7; border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: 13px; }
 
 @media (max-width: 640px) {
   .panel { grid-template-columns: 1fr; }

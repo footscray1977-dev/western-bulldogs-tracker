@@ -20,7 +20,7 @@ global.location = { _h:'', set hash(v){ this._h=v; }, get hash(){ return this._h
 global.document = { getElementById: id => ids[id] || (ids[id]=el()),
   querySelectorAll: sel => sel==='.tab' ? tabs : [], createElement: () => ({ click(){} }),
   addEventListener: (ev,fn) => { handlers[ev]=fn; }, body: { className:'' } };
-global.localStorage = { _s:{wb27: JSON.stringify({tab:'${tab}'})},
+global.localStorage = { _s:{wb28: JSON.stringify({tab:'${tab}'})},
   getItem(k){return this._s[k]||null}, setItem(k,v){this._s[k]=v} };
 global.Blob = function(){}; global.URL = { createObjectURL:()=>'x', revokeObjectURL(){} };
 eval(fs.readFileSync('data/players.js','utf8'));
@@ -39,15 +39,17 @@ console.log(JSON.stringify({ names: [...found], html }));
   return JSON.parse(execFileSync(process.execPath, ["-e", src], { cwd: __dirname + "/.." }).toString());
 }
 
-// Roster expectations per tab. Moves covers movers (ins+outs); timeline/about
-// are narrative and exempt; every other player tab must name all 37.
+// Roster expectations per tab. Moves covers movers (ins+outs); timeline is
+// narrative and exempt; every other player tab must name the full squad.
 const players = require("child_process").execFileSync(process.execPath, ["-e",
   "global.window={};require('./data/players.js');const d=window.BULLDOGS_DATA;" +
   "console.log(JSON.stringify({squad:[...d.ins,...d.retained].map(p=>p.name)," +
-  "moves:[...d.ins,...d.outs].map(p=>p.name)}))"], { cwd: __dirname + "/.." }).toString();
+  "moves:[...d.ins,...d.outs].map(p=>p.name)," +
+  "outs:d.outs.map(p=>p.name)}))"], { cwd: __dirname + "/.." }).toString();
 
-const { squad, moves } = JSON.parse(players);
+const { squad, moves, outs } = JSON.parse(players);
 const expect = { squad, leaders: squad, players: squad, compare: squad, advanced: squad, ranks: squad, ratings: squad, moves };
+const SQUAD_ONLY = ["squad", "leaders", "players", "advanced", "ranks"];
 
 let failures = 0;
 for (const tab of TABS) {
@@ -60,6 +62,13 @@ for (const tab of TABS) {
     console.log(`FAIL ${tab}: missing ${missing.length}: ${missing.join("; ")}`);
   } else {
     console.log(`ok ${tab}: all ${expect[tab].length} present`);
+  }
+  if (SQUAD_ONLY.includes(tab)) {
+    const leaked = outs.filter((n) => html.includes(n));
+    if (leaked.length) {
+      failures++;
+      console.log(`FAIL ${tab}: shows departed players: ${leaked.join("; ")}`);
+    }
   }
 }
 if (failures) { console.log(`${failures} tab(s) with gaps`); process.exit(1); }
