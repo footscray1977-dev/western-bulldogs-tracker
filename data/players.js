@@ -23,7 +23,8 @@ window.BULLDOGS_DATA = {
       { label: "Draftguru — Bulldogs playing list 2026", url: "https://www.draftguru.com.au/lists/2026/western-bulldogs" },
       { label: "Bulldogs — list changes after the trade period", url: "https://www.westernbulldogs.com.au/news/2151898" },
       { label: "Port Adelaide — Zak Butters profile", url: "https://www.portadelaidefc.com.au/players/1856/zak-butters" },
-      { label: "Bulldogs — official team photos", url: "https://www.westernbulldogs.com.au/teams/afl" }
+      { label: "Bulldogs — official team photos", url: "https://www.westernbulldogs.com.au/teams/afl" },
+      { label: "Footywire — 2026 player stats and rankings", url: "https://www.footywire.com/afl/footy/ft_player_rankings?year=2026" }
     ]
   },
 

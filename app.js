@@ -1,6 +1,15 @@
 (function () {
   "use strict";
   var DATA = window.BULLDOGS_DATA;
+  var FW = window.FW2026 || {};
+  [DATA.ins, DATA.retained, DATA.outs].forEach(function (list) {
+    list.forEach(function (p) {
+      var s = FW[p.name] || {};
+      ["avgK", "avgHB", "avgD", "avgM", "avgG", "avgT", "avgAF", "avgSC", "rankBest", "rankCat"].forEach(function (k) {
+        if (p[k] === undefined) p[k] = s[k] === undefined ? null : s[k];
+      });
+    });
+  });
   var state = { tab: "squad", q: "", pos: "All", sortKey: "grade", sortDir: -1 };
   var GRADE_RANK = { "A+": 7, "A": 6, "B+": 5, "B": 4, "C+": 3, "C": 2, "D": 1 };
   var GRADES = ["A+", "A", "B+", "B", "C+", "C", "D"];
@@ -88,6 +97,11 @@
       }
       var av = (a[k] === null || a[k] === undefined) ? "" : a[k];
       var bv = (b[k] === null || b[k] === undefined) ? "" : b[k];
+      if (k === "avgD" || k === "rankBest") {
+        if (av === "" && bv === "") return String(a.name).localeCompare(String(b.name));
+        if (av === "") return 1;
+        if (bv === "") return -1;
+      }
       if (typeof av === "number" && typeof bv === "number") return (av - bv) * state.sortDir;
       return String(av).localeCompare(String(bv)) * state.sortDir;
     });
@@ -122,9 +136,9 @@
       return '<th data-k="' + k + '" aria-sort="' + sel + '">' + label + a + "</th>";
     };
     var html = leadersHTML(squad) + shapeHTML(squad) + bandsHTML(squad) +
-      '<table><thead><tr>' +
+      '<div class="tscroll"><table><thead><tr>' +
       th("name", "Player") + th("_s", "Status") + th("pos", "Pos") + th("grade", "Grade") +
-      th("games", "Games") + th("goals", "Goals") + th("g2026", "2026 G·Gl") +
+      th("games", "Games") + th("goals", "Goals") + th("avgD", "2026 Avg") + th("rankBest", "AFL Rank") +
       th("ht", "Ht") + th("dob", "Born") +
       "</tr></thead><tbody>" +
       rows.map(function (r, i) {
@@ -141,11 +155,12 @@
           "<td><span class='grade g" + esc((r.grade || "u").replace("+", "p")) + "'>" + dash(r.grade) + "</span></td>" +
           "<td><span class='gcell'><span class='gbar'><i style='width:" + pct + "%'></i></span>" + dash(r.games) + "</span></td>" +
           "<td>" + dash(r.goals) + "</td>" +
-          "<td>" + dash(r.g2026) + " · " + dash(r.gl2026) + "</td>" +
+          "<td>" + (r.avgD === null || r.avgD === undefined ? "–" : r.avgD.toFixed(1)) + "</td>" +
+          "<td>" + (r.rankBest ? "<span class='rank'>#" + r.rankBest + " " + esc(r.rankCat || "") + "</span>" : "–") + "</td>" +
           "<td>" + dash(r.ht) + "</td>" +
           "<td class='muted'>" + dash(r.dob) + "</td></tr>";
-      }).join("") + "</tbody></table>" +
-      '<div class="count muted">Click a row for the full player profile. Grades via Draftguru 2026 list.</div>' +
+      }).join("") + "</tbody></table></div>" +
+      '<div class="count muted">Click a row for the full player profile. 2026 averages + AFL ranks via Footywire; grades via Draftguru.</div>' +
       '<div class="count">' + rows.length + " of " + squad.length + " on the 2027 list view</div>";
     host.innerHTML = html;
 
@@ -176,8 +191,13 @@
     }, rows[0] || {});
   }
 
+  function bestAvg(squad) {
+    var elig = squad.filter(function (r) { return r.avgD && (r.g2026 || 0) >= 5; });
+    return maxBy(elig.length ? elig : squad, "avgD");
+  }
+
   function leadersHTML(squad) {
-    var g = maxBy(squad, "games"), gl = maxBy(squad, "goals"), y = maxBy(squad, "g2026");
+    var g = maxBy(squad, "games"), gl = maxBy(squad, "goals"), y = bestAvg(squad);
     var elite = squad.filter(function (r) { return r.grade === "A+" || r.grade === "A"; }).length;
     var cell = function (label, name, val) {
       return '<div class="lead"><div class="l">' + label + "</div>" +
@@ -187,7 +207,7 @@
     return '<div class="leaders">' +
       cell("Most career games", g.name, (g.games || 0) + " games") +
       cell("Most career goals", gl.name, (gl.goals || 0) + " goals") +
-      cell("Most games in 2026", y.name, (y.g2026 || 0) + " games") +
+      cell("Best 2026 average", y.name, (y.avgD ? y.avgD.toFixed(1) : "–") + " disp per game") +
       '<div class="lead"><div class="l">Elite grades (A+/A)</div><div class="v">' + elite + " players</div>" +
       '<div class="s">of ' + squad.length + " on the list</div></div></div>";
   }
@@ -217,12 +237,16 @@
   function openModal(r) {
     if (!r) return;
     var dash = function (v) { return (v === null || v === undefined || v === "") ? "–" : v; };
+    var avgLine = (r.avgD === null || r.avgD === undefined)
+      ? ((r.g2026 !== undefined && r.g2026 !== null) ? r.g2026 + " games" : "–")
+      : r.avgD.toFixed(1) + " disp · " + (r.avgAF !== null && r.avgAF !== undefined ? r.avgAF.toFixed(1) + " AF" : "no fantasy avg");
     var rows = [
       ["Status", pill(r._s)], ["Position", dash(r.pos)], ["Grade", dash(r.grade)],
       ["Guernsey", r.num ? "#" + esc(r.num) : "TBC"], ["Born", dash(r.dob)],
       ["Height", dash(r.ht)], ["Drafted", dash(r.drafted)],
       ["Career", (r.games !== undefined && r.games !== null) ? r.games + " games · " + r.goals + " goals" : "–"],
-      ["2026", (r.g2026 !== undefined && r.g2026 !== null) ? r.g2026 + " games · " + r.gl2026 + " goals" : "–"]
+      ["2026 average", avgLine],
+      ["AFL rank", r.rankBest ? "#" + r.rankBest + " " + esc(r.rankCat || "") + " per game" : "Unranked"]
     ].map(function (kv) {
       return '<div class="mrow"><span>' + kv[0] + "</span><span>" + kv[1] + "</span></div>";
     }).join("");
@@ -253,11 +277,12 @@
 
   function exportCSV() {
     var rows = rowsForTab();
-    var head = ["name", "status", "pos", "num", "grade", "dob", "ht", "games", "goals", "g2026", "gl2026", "via_or_move", "note"];
+    var head = ["name", "status", "pos", "num", "grade", "dob", "ht", "games", "goals", "g2026", "gl2026", "avg_disp_2026", "avg_fantasy_2026", "afl_rank", "rank_cat", "via_or_move", "note"];
     var lines = [head.join(",")].concat(rows.map(function (r) {
       var dash = function (v) { return (v === null || v === undefined) ? "" : v; };
       return [r.name, r._s, r.pos || "", dash(r.num), dash(r.grade), dash(r.dob), dash(r.ht),
-        dash(r.games), dash(r.goals), dash(r.g2026), dash(r.gl2026),
+        dash(r.games), dash(r.goals), dash(r.g2026), dash(r.gl2026), dash(r.avgD), dash(r.avgAF),
+        dash(r.rankBest), dash(r.rankCat),
         r.via || r.move || "", ((r.note || r.detail || "") + (r.honours ? " | " + r.honours : "")).replace(/,/g, ";")].map(function (c) {
         return '"' + String(c).replace(/"/g, '""') + '"';
       }).join(",");
