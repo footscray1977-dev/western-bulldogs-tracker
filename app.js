@@ -749,9 +749,24 @@
     });
   }
 
+  function tlPhoto(t) {
+    var s = t.what + " " + t.detail;
+    var m = [["Butters", "images/butters.jpg"], ["Butts", "images/butts.jpg"],
+      ["Maginness", "images/maginness.jpg"], ["O'Keeffe", "images/okeeffe.jpg"],
+      ["O’Keeffe", "images/okeeffe.jpg"], ["Bontempelli", "images/spot-bont.avif"],
+      ["Liberatore", null], ["Treloar", null], ["Harmes", null]];
+    for (var i = 0; i < m.length; i++) {
+      if (s.indexOf(m[i][0]) >= 0) {
+        if (!m[i][1]) return "";
+        return "<img class='tlphoto' src='" + m[i][1] + "' alt='' loading='lazy' onerror='this.remove()'>";
+      }
+    }
+    return "";
+  }
   function renderTimeline() {
     $("content").innerHTML = '<ol class="timeline">' + DATA.timeline.map(function (t) {
-      return '<li><span class="twhen">' + esc(t.when) + "</span>" +
+      var ph = tlPhoto(t);
+      return '<li' + (ph ? ' class="arrival"' : '') + '><span class="twhen">' + esc(t.when) + "</span>" + ph +
         "<div><strong>" + esc(t.what) + "</strong><p class='muted'>" + esc(t.detail) + "</p></div></li>";
     }).join("") + "</ol>";
   }
